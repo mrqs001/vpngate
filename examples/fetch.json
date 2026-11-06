@@ -1,0 +1,21 @@
+{
+  "name": "fetch",
+  "public_status": true,
+  "fetch": {
+    "listen": "127.0.0.1:15400"
+  },
+  "tunnels": [
+    {
+      "id": "a",
+      "attach_namespace": "vpn-a",
+      "outbound_interface": "wg0",
+      "dns": ["1.1.1.1"]
+    },
+    {
+      "id": "b",
+      "attach_namespace": "vpn-b",
+      "outbound_interface": "wg0",
+      "dns": ["1.1.1.1"]
+    }
+  ]
+}

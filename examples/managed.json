@@ -1,0 +1,22 @@
+{
+  "name": "default",
+  "run_as": "nobody",
+  "max_connections": 4096,
+  "per_tunnel_connections": 512,
+  "download_mbps": 0,
+  "tunnels": [
+    {
+      "id": "exit-a",
+      "listen": "127.0.0.1:15300",
+      "wireguard_config": "profiles/exit-a.conf"
+    },
+    {
+      "id": "exit-b",
+      "listen": "127.0.0.1:15301",
+      "wireguard_config": "profiles/exit-b.conf"
+    }
+  ],
+  "worker_threads": 2,
+  "relay_mode": "buffered",
+  "public_status": true
+}

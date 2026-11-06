@@ -1,0 +1,24 @@
+{
+  "name": "attached",
+  "max_connections": 4096,
+  "per_tunnel_connections": 512,
+  "download_mbps": 0,
+  "tunnels": [
+    {
+      "id": "existing-exit",
+      "listen": "127.0.0.1:15300",
+      "attach_namespace": "my-existing-vpn",
+      "dns": [
+        "1.1.1.1"
+      ],
+      "allowed_ports": [
+        80,
+        443
+      ],
+      "outbound_interface": "wg0"
+    }
+  ],
+  "worker_threads": 2,
+  "relay_mode": "buffered",
+  "public_status": true
+}

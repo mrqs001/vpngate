@@ -1,0 +1,23 @@
+[Unit]
+Description=VPN proxy gateway (%i)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStartPre=/usr/local/bin/vpngate cleanup --name %i
+ExecStart=/usr/local/bin/vpngate run --name %i --config /etc/vpngate/%i.json
+Restart=on-failure
+RestartSec=3
+KillMode=mixed
+TimeoutStartSec=120
+TimeoutStopSec=45
+LimitNOFILE=65536
+NoNewPrivileges=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

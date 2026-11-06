@@ -1,0 +1,17 @@
+{
+  "name": "default",
+  "public_status": true,
+  "fetch": {
+    "listen": "127.0.0.1:15400"
+  },
+  "tunnels": [
+    {
+      "id": "exit-a",
+      "wireguard_config": "profiles/exit-a.conf"
+    },
+    {
+      "id": "exit-b",
+      "wireguard_config": "profiles/exit-b.conf"
+    }
+  ]
+}

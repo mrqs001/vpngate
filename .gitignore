@@ -1,0 +1,15 @@
+/bin/
+*.test
+coverage.out
+*.pprof
+*.perf
+perf.data*
+*.conf
+!examples/*.conf.example
+/vpngate.json
+/profiles/
+.env
+.env.*
+*.pem
+*.key
+*.log

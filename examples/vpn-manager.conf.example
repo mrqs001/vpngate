@@ -1,0 +1,6 @@
+# Replace vpn-manager.service with the service that owns your VPN namespaces.
+# Install as /etc/systemd/system/vpngate@default.service.d/vpn.conf.
+[Unit]
+Requires=vpn-manager.service
+After=vpn-manager.service
+PartOf=vpn-manager.service
