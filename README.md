@@ -9,7 +9,7 @@ A standalone Linux gateway that turns VPN tunnels into one local HTTP fetch endp
 application → /fetch → adaptive routing → selected VPN → website
 ```
 
-One static binary runs a privileged supervisor/socket broker and an unprivileged worker. There is no per-tunnel proxy daemon, database, container or application SDK. Managed mode creates kernel WireGuard tunnels; attach mode reuses existing VPN network namespaces.
+One static binary runs a privileged supervisor/socket broker and an unprivileged worker. There is no per-tunnel proxy daemon, database, container or application SDK. Managed mode creates kernel WireGuard tunnels directly from JSON, without `ip`, `wg`, `wg-quick` or an external VPN manager. Attach mode reuses existing VPN network namespaces.
 
 ## Features
 
@@ -23,7 +23,7 @@ Fetch mode is an HTTP API: applications send a target URL in a header. Setting `
 
 ## Build
 
-Requires Linux and Go 1.27.1 or later. Managed mode also requires kernel WireGuard, `iproute2` (`/usr/bin/ip`) and `wireguard-tools` (`/usr/bin/wg`). The static executable needs no Go installation. HTTPS certificate verification uses the system CA certificates.
+Building requires Linux and Go 1.27.1 or later. Running requires Linux with network namespace and kernel WireGuard support, root for setup/socket creation, and an unprivileged worker account (default `nobody`). No Go installation or VPN command-line tools are needed at runtime. HTTPS certificate verification uses the system CA certificates.
 
 ```sh
 git clone https://github.com/mrqs001/vpngate.git
@@ -33,7 +33,7 @@ make test
 make check
 ```
 
-The two direct dependencies are `golang.org/x/sys` for Linux operations and `github.com/miekg/dns` for DNS. Versions and checksums are pinned in `go.mod` and `go.sum`.
+The Go dependencies are compiled into the executable. Native setup uses `vishvananda/netlink` and `wireguard/wgctrl`; DNS uses `miekg/dns`, and Linux operations use `x/sys`. Versions and checksums are pinned in `go.mod` and `go.sum`. No userspace WireGuard packet engine or TCP/IP stack is embedded.
 
 ## One endpoint
 
@@ -41,6 +41,7 @@ Choose an example and copy it to `vpngate.json`:
 
 | Example | Use |
 | --- | --- |
+| [fetch-native.json](examples/fetch-native.json) | Create WireGuard tunnels from one JSON file; no separate VPN tools or profiles |
 | [fetch-managed.json](examples/fetch-managed.json) | Create WireGuard tunnels from your provider profiles |
 | [fetch.json](examples/fetch.json) | Attach to existing VPN namespaces |
 | [managed.json](examples/managed.json) | Managed tunnels with one conventional proxy port per tunnel |
@@ -65,7 +66,7 @@ curl --noproxy '*' \
 
 Use a persistent local HTTP client and send the original request method, headers and body. Vpngate selects the VPN and streams the response. HTTPS verification is enabled by default. Applications keep control of workload priorities, cancellation, cookies, parsing and storage.
 
-WireGuard profiles need one interface, one peer, an endpoint, an IPv4 address, full-tunnel `AllowedIPs` and IP-literal DNS. IPv6 is supported alongside IPv4. JSON `dns` overrides profile DNS. Profile paths resolve relative to the JSON file. Shell hooks and wg-quick-only settings are rejected. Use a distinct provider peer identity per managed tunnel.
+Inline `wireguard` settings contain your provider's keys, endpoint and tunnel addresses; see [native setup](docs/native.md). Protect the JSON file with mode `0600`. Existing `wireguard_config` profile files remain supported through the same native setup. Profiles need one interface, one peer, an endpoint, an IPv4 address, full-tunnel `AllowedIPs` and IP-literal DNS. IPv6 is supported alongside IPv4. JSON `dns` overrides profile DNS. Profile paths resolve relative to the JSON file. Shell hooks and wg-quick-only settings are rejected. Use a distinct provider peer identity per managed tunnel.
 
 For attach mode, set `attach_namespace`, `outbound_interface` and VPN-reachable DNS servers. Explicit interface binding prevents traffic from following another route if the VPN fails. Restart vpngate after an external manager recreates a namespace: the gateway refuses to silently adopt a changed namespace identity.
 

@@ -4,43 +4,38 @@ package daemon
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
 	"net/netip"
-	"os/exec"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mrqs001/vpngate/internal/config"
 )
 
-type Runner interface {
-	Run(context.Context, string, []string, string) error
-}
-type Commands struct{}
-
-func (Commands) Run(ctx context.Context, program string, args []string, input string) error {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, program, args...)
-	cmd.Stdin = strings.NewReader(input)
-	// wg may echo malformed profile lines. Never return its raw output.
-	if cmd.Run() != nil {
-		return errors.New("network setup command failed")
-	}
-	return nil
+// Network only configures owned resources; it is never used by the traffic path.
+type Network interface {
+	CreateNamespace(context.Context, string) (uint64, uint64, error)
+	CreateDevice(context.Context, string, string) (int, error)
+	MoveDevice(context.Context, Resource) error
+	Configure(context.Context, Resource, config.WireGuard, string) error
+	DeleteDevice(context.Context, Resource) error
+	DeleteNamespace(context.Context, Resource) error
 }
 
 type Resource struct {
-	ID         string `json:"id"`
-	Namespace  string `json:"namespace"`
-	Device     string `json:"device,omitempty"`
-	Owned      bool   `json:"owned"`
-	HostDevice bool   `json:"host_device,omitempty"`
+	ID           string `json:"id"`
+	Namespace    string `json:"namespace"`
+	Device       string `json:"device,omitempty"`
+	Owned        bool   `json:"owned"`
+	HostDevice   bool   `json:"host_device,omitempty"`
+	NamespaceDev uint64 `json:"namespace_dev,omitempty"`
+	NamespaceIno uint64 `json:"namespace_ino,omitempty"`
+	DeviceIndex  int    `json:"device_index,omitempty"`
+	DeviceAlias  string `json:"device_alias,omitempty"`
 }
 type Plan struct {
 	Config    config.Config
@@ -59,8 +54,14 @@ func Prepare(c config.Config) (Plan, error) {
 	peers := map[string]bool{}
 	for i, t := range c.Tunnels {
 		res := Resource{ID: t.ID, Namespace: t.Attach}
-		if t.WireGuard != "" {
-			w, err := config.ReadWireGuard(t.WireGuard)
+		if t.WireGuard != "" || t.Inline != nil {
+			var w config.WireGuard
+			var err error
+			if t.Inline != nil {
+				w, err = t.Inline.Profile()
+			} else {
+				w, err = config.ReadWireGuard(t.WireGuard)
+			}
 			if err != nil {
 				return Plan{}, fmt.Errorf("tunnel %s: %w", t.ID, err)
 			}
@@ -96,19 +97,18 @@ func Prepare(c config.Config) (Plan, error) {
 	return p, nil
 }
 
-// Setup only touches deterministic names reserved for this instance, refuses
-// existing objects, and rolls back only commands that succeeded in this call.
-func (p Plan) Setup(ctx context.Context, r Runner) (func() error, error) {
+// Setup refuses existing objects and rolls back only resources created by this
+// invocation, with namespace identity and interface ownership checks.
+func (p Plan) Setup(ctx context.Context, r Network) (func() error, error) {
 	return p.setup(ctx, r, nil)
 }
 
-func (p Plan) setup(ctx context.Context, r Runner, record func(Resource) error) (func() error, error) {
-	type undo struct{ args []string }
-	var undos []undo
+func (p Plan) setup(ctx context.Context, r Network, record func(Resource) error) (func() error, error) {
+	var undos []func() error
 	cleanup := func() error {
 		var errs []error
 		for i := len(undos) - 1; i >= 0; i-- {
-			if err := r.Run(context.Background(), "/usr/bin/ip", undos[i].args, ""); err != nil {
+			if err := undos[i](); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -132,61 +132,48 @@ func (p Plan) setup(ctx context.Context, r Runner, record func(Resource) error) 
 		}
 		// Only the VPN server bootstrap is resolved on the host, before the tunnel exists.
 		endpoint := net.JoinHostPort(host, port)
-		if err := r.Run(ctx, "/usr/bin/ip", []string{"netns", "add", res.Namespace}, ""); err != nil {
-			return fail(fmt.Errorf("tunnel %s: namespace unavailable or already exists", res.ID))
-		}
-		undos = append(undos, undo{[]string{"netns", "delete", res.Namespace}})
-		if record != nil {
-			if err := record(res); err != nil {
-				return fail(err)
-			}
-		}
-		if err := r.Run(ctx, "/usr/bin/ip", []string{"link", "add", res.Device, "type", "wireguard"}, ""); err != nil {
-			return fail(fmt.Errorf("tunnel %s: interface unavailable or already exists", res.ID))
-		}
-		undos = append(undos, undo{[]string{"link", "delete", res.Device}})
-		res.HostDevice = true
-		if record != nil {
-			if err := record(res); err != nil {
-				return fail(err)
-			}
-		}
-		if err := r.Run(ctx, "/usr/bin/ip", []string{"link", "set", res.Device, "netns", res.Namespace}, ""); err != nil {
+		var token [16]byte
+		if _, err := rand.Read(token[:]); err != nil {
 			return fail(err)
 		}
-		undos[len(undos)-1] = undo{[]string{"-n", res.Namespace, "link", "delete", res.Device}}
+		res.DeviceAlias = "vpngate:" + hex.EncodeToString(token[:])
+		var err error
+		res.NamespaceDev, res.NamespaceIno, err = r.CreateNamespace(ctx, res.Namespace)
+		if err != nil {
+			return fail(fmt.Errorf("tunnel %s: namespace unavailable or already exists: %w", res.ID, err))
+		}
+		namespaceResource := res
+		undos = append(undos, func() error { return r.DeleteNamespace(context.Background(), namespaceResource) })
+		if record != nil {
+			if err := record(res); err != nil {
+				return fail(err)
+			}
+		}
+		res.DeviceIndex, err = r.CreateDevice(ctx, res.Device, res.DeviceAlias)
+		if err != nil {
+			return fail(fmt.Errorf("tunnel %s: interface unavailable or already exists: %w", res.ID, err))
+		}
+		res.HostDevice = true
+		deviceResource := res
+		// DeleteDevice checks both locations, including a crash/failure between
+		// the kernel move and its ownership-journal update.
+		undos = append(undos, func() error { return r.DeleteDevice(context.Background(), deviceResource) })
+		if record != nil {
+			if err := record(res); err != nil {
+				return fail(err)
+			}
+		}
+		if err := r.MoveDevice(ctx, res); err != nil {
+			return fail(err)
+		}
 		res.HostDevice = false
 		if record != nil {
 			if err := record(res); err != nil {
 				return fail(err)
 			}
 		}
-		commands := [][]string{
-			{"netns", "exec", res.Namespace, "/usr/bin/wg", "setconf", res.Device, "/dev/stdin"},
-			{"-n", res.Namespace, "link", "set", "lo", "up"},
-			{"-n", res.Namespace, "link", "set", res.Device, "mtu", strconv.Itoa(w.MTU), "up"},
-		}
-		for j, args := range commands {
-			input := ""
-			if j == 0 {
-				input = w.Setconf(endpoint)
-			}
-			if err := r.Run(ctx, "/usr/bin/ip", args, input); err != nil {
-				return fail(fmt.Errorf("tunnel %s: interface setup failed", res.ID))
-			}
-		}
-		for _, address := range w.Addresses {
-			if err := r.Run(ctx, "/usr/bin/ip", []string{"-n", res.Namespace, "address", "add", address.String(), "dev", res.Device}, ""); err != nil {
-				return fail(err)
-			}
-		}
-		if err := r.Run(ctx, "/usr/bin/ip", []string{"-n", res.Namespace, "route", "add", "default", "dev", res.Device}, ""); err != nil {
-			return fail(err)
-		}
-		if w.IPv6() {
-			if err := r.Run(ctx, "/usr/bin/ip", []string{"-n", res.Namespace, "-6", "route", "add", "default", "dev", res.Device}, ""); err != nil {
-				return fail(err)
-			}
+		if err := r.Configure(ctx, res, w, endpoint); err != nil {
+			return fail(fmt.Errorf("tunnel %s: interface configuration failed: %w", res.ID, err))
 		}
 	}
 	return cleanup, nil

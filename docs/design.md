@@ -33,9 +33,9 @@ The optional aggregate download bucket checks an atomic rate in unlimited mode. 
 
 ## Lifecycle
 
-Managed setup calls `ip` and `wg` with fixed argument vectors and private configuration on stdin, without a shell. WireGuard's UDP socket originates in the host namespace; its interface moves into the lane namespace with isolated routes. Native netlink could remove the startup utility dependency but would not accelerate steady-state forwarding.
+Managed setup uses native Linux namespace operations and netlink to create WireGuard interfaces, configure keys and peers, and install isolated addresses/routes. Both inline JSON and existing profile files use this path; no VPN command-line utility is executed. WireGuard's UDP socket originates in the host namespace; its interface moves into the lane namespace with isolated routes. Setup handles are closed before serving traffic, and the kernel TCP/WireGuard data path is unchanged. See [native setup](native.md).
 
-The supervisor reserves listeners before changing tunnels and records ownership transitions. Graceful stop or startup rollback removes only owned resources. Recovery refuses a live instance and skips attached namespaces. Incomplete journal writes and operations not yet journaled require inspection; existing objects are never adopted automatically.
+The supervisor reserves listeners before changing tunnels and records ownership transitions, including namespace device/inode, interface index and a random interface alias. Graceful stop or startup rollback removes only owned resources. Recovery refuses a live instance, verifies resource identity and skips attached namespaces. Incomplete journal writes and operations not yet journaled require inspection; existing objects are never adopted automatically. Old owned journals without identity fields require the old executable's cleanup before upgrading.
 
 systemd performs idempotent recovery before startup, waits for `READY=1` after worker/control readiness, and restarts on failure. The child has no new privileges and a parent-death signal. Unexpected listener failures and unsolicited worker exits propagate as service failures instead of leaving a partially dead service marked ready. Attached instances depend on their external namespace manager; managed instances need none.
 

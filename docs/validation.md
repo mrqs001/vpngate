@@ -1,5 +1,7 @@
 # Validation and benchmarks
 
+The 0.5.0 native setup comparison, 500-tunnel fault exercise and migration checks are recorded in [native validation](native-validation.md). The older 0.4.0 fetch results below describe a different change and are retained as historical evidence.
+
 ## Reproducible local checks
 
 ```sh
