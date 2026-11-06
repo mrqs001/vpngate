@@ -67,7 +67,16 @@ func TestNativeNetworkIsolation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		cmd := exec.Command("unshare", "--user", "--map-root-user", "--mount", "--net", "--fork", "--kill-child", exe, "-test.run=^TestNativeNetworkIsolation$", "-test.v", "-test.timeout=60s")
+		// A root CI launcher may lose access to the runner-owned home directory
+		// after entering a user namespace. Inherit this executable like the
+		// production worker does, without reopening its parent directories.
+		executable, err := os.Open(exe)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer executable.Close()
+		cmd := exec.Command("unshare", "--user", "--map-root-user", "--mount", "--net", "--fork", "--kill-child", "/proc/self/fd/3", "-test.run=^TestNativeNetworkIsolation$", "-test.v", "-test.timeout=60s")
+		cmd.ExtraFiles = []*os.File{executable}
 		cmd.Env = append(os.Environ(), "VPNGATE_NATIVE_PARENT_USER="+userNS, "VPNGATE_NATIVE_PARENT_NET="+netNS)
 		output, err := cmd.CombinedOutput()
 		t.Logf("%s", output)
