@@ -26,6 +26,7 @@ func main() {
 	address := flag.String("ip", "10.253.66.2", "fixture IP")
 	generate := flag.Bool("generate", false, "only create fixture certificate")
 	delay := flag.Int("delay-ms", 0, "response delay for WAN-like concurrency")
+	size := flag.Int("bytes", 40<<10, "response bytes (1 to 8 MiB)")
 	flag.Parse()
 	if *dir == "" {
 		panic("--dir required")
@@ -77,7 +78,11 @@ func main() {
 			}
 		}(network)
 	}
-	payload := bytes.Repeat([]byte("vpngate-fixture!"), 2560) // 40,960 bytes, no disk IO.
+	if *size < 1 || *size > 8<<20 {
+		panic("--bytes outside supported range")
+	}
+	pattern := []byte("vpngate-fixture!")
+	payload := bytes.Repeat(pattern, (*size+len(pattern)-1)/len(pattern))[:*size] // No disk IO.
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(time.Duration(*delay) * time.Millisecond)
 		w.Header().Set("Content-Length", fmt.Sprint(len(payload)))

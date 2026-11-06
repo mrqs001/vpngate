@@ -35,3 +35,4 @@ jobs:
         run: |
           ./bin/vpngate check --config examples/fetch.json
           ./bin/vpngate check --config examples/attach.json
+          ./bin/vpngate check --config examples/embedded.json
