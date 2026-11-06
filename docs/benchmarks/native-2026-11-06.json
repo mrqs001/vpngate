@@ -1,0 +1,1050 @@
+{
+  "date": "2026-11-06",
+  "baseline": "v0.4.0 kernel WireGuard managed by ip/wg",
+  "candidate": "v0.5.0 native kernel WireGuard setup",
+  "fixture": "six synthetic WireGuard tunnels; 40960-byte verified TLS/HTTP2 responses; local HTTP/1.1 fetch client",
+  "client": "standalone Rust reqwest 0.13.5 / Tokio 1.53.3 client, six runtime threads",
+  "machine_cpu": "/proc/stat busy CPU excluding idle/iowait; includes both tunnel ends, client, origin and background machine work",
+  "order": "baseline, native, native, baseline; repeated twice for capacity-4t-matched",
+  "scenarios": [
+    {
+      "worker_threads": 2,
+      "delay_one_way_ms": 0,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "native": "0b2accb756c8b05eec2dbfa69acf6470eb803b723b28e7457f9be853eabb6ddc"
+      },
+      "windows": [
+        {
+          "MBps": 639.7649422382058,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 33.015192,
+          "p95_ms": 39.633726,
+          "requests": 240000,
+          "seconds": 15.365643459,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 0,
+          "gateway_cpu_seconds": 23.96,
+          "origin_cpu_seconds": 22.1,
+          "client_cpu_seconds": 14.864646999999998,
+          "host_busy_cpu_seconds": 145.14999999999782,
+          "idle_cpu_seconds_per_second": 0.5699512699277061,
+          "worker_memory": {
+            "rss_kib": 49216,
+            "hwm_kib": 80836,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 136.39233199728443,
+          "gateway_cpu_seconds_per_GB": 2.4373372395833335,
+          "host_busy_cpu_seconds_per_GB": 14.765421549478946,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.874545491260218,
+          "shutdown_seconds": 0.41392004700173857,
+          "listener_bind_seconds": 0.05124879100185353
+        },
+        {
+          "MBps": 644.3284177643488,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 33.267751999999994,
+          "p95_ms": 37.967672,
+          "requests": 240000,
+          "seconds": 15.256815824,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 1,
+          "gateway_cpu_seconds": 23.849999999999998,
+          "origin_cpu_seconds": 22.07,
+          "client_cpu_seconds": 14.974440999999995,
+          "host_busy_cpu_seconds": 143.12000000000262,
+          "idle_cpu_seconds_per_second": 0.4766336842513077,
+          "worker_memory": {
+            "rss_kib": 53880,
+            "hwm_kib": 71508,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 135.84808766386584,
+          "gateway_cpu_seconds_per_GB": 2.4261474609375,
+          "host_busy_cpu_seconds_per_GB": 14.5589192708336,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.819182094712916,
+          "shutdown_seconds": 0.4139184870000463,
+          "listener_bind_seconds": 0.050346869000350125
+        },
+        {
+          "MBps": 645.7032015671672,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 32.768801,
+          "p95_ms": 38.162793,
+          "requests": 240000,
+          "seconds": 15.224332133,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 2,
+          "gateway_cpu_seconds": 23.869999999999997,
+          "origin_cpu_seconds": 22.080000000000005,
+          "client_cpu_seconds": 14.912402000000007,
+          "host_busy_cpu_seconds": 143.52000000000044,
+          "idle_cpu_seconds_per_second": 0.5666274568011685,
+          "worker_memory": {
+            "rss_kib": 53736,
+            "hwm_kib": 70672,
+            "threads": 10
+          },
+          "host_idle_adjusted_cpu_seconds": 134.89347540198233,
+          "gateway_cpu_seconds_per_GB": 2.4281819661458335,
+          "host_busy_cpu_seconds_per_GB": 14.599609375000046,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.722073913775873,
+          "shutdown_seconds": 0.3638514080012101,
+          "listener_bind_seconds": 0.05039170900272438
+        },
+        {
+          "MBps": 638.40859658011,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 33.039561,
+          "p95_ms": 38.114133,
+          "requests": 240000,
+          "seconds": 15.39828889,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 3,
+          "gateway_cpu_seconds": 23.990000000000002,
+          "origin_cpu_seconds": 22.28,
+          "client_cpu_seconds": 15.035290000000018,
+          "host_busy_cpu_seconds": 144.87999999999738,
+          "idle_cpu_seconds_per_second": 0.5532907196195571,
+          "worker_memory": {
+            "rss_kib": 52628,
+            "hwm_kib": 71636,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 136.36026965913945,
+          "gateway_cpu_seconds_per_GB": 2.440388997395834,
+          "host_busy_cpu_seconds_per_GB": 14.737955729166401,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.871283941562853,
+          "shutdown_seconds": 0.3638064579972706,
+          "listener_bind_seconds": 0.050590489001479
+        }
+      ],
+      "name": "capacity-2t",
+      "matched_peer_identities": false,
+      "readiness": "listener bound; not full worker readiness"
+    },
+    {
+      "worker_threads": 4,
+      "delay_one_way_ms": 0,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "native": "0b2accb756c8b05eec2dbfa69acf6470eb803b723b28e7457f9be853eabb6ddc"
+      },
+      "windows": [
+        {
+          "MBps": 772.6139570531606,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 25.171874,
+          "p95_ms": 33.790434,
+          "requests": 240000,
+          "seconds": 12.723559949,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 0,
+          "gateway_cpu_seconds": 28.189999999999998,
+          "origin_cpu_seconds": 20.220000000000002,
+          "client_cpu_seconds": 12.972679000000001,
+          "host_busy_cpu_seconds": 148.40999999999985,
+          "idle_cpu_seconds_per_second": 0.49662966841827905,
+          "worker_memory": {
+            "rss_kib": 54020,
+            "hwm_kib": 76468,
+            "threads": 13
+          },
+          "host_idle_adjusted_cpu_seconds": 142.09110264142788,
+          "gateway_cpu_seconds_per_GB": 2.8676350911458335,
+          "host_busy_cpu_seconds_per_GB": 15.097045898437486,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.454254419090566,
+          "shutdown_seconds": 0.36389236800096114,
+          "listener_bind_seconds": 0.05130994099818054
+        },
+        {
+          "MBps": 732.1588322589051,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 26.014395999999998,
+          "p95_ms": 39.674976,
+          "requests": 240000,
+          "seconds": 13.426594841,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 1,
+          "gateway_cpu_seconds": 28.92,
+          "origin_cpu_seconds": 20.74,
+          "client_cpu_seconds": 13.226990999999996,
+          "host_busy_cpu_seconds": 155.89999999999782,
+          "idle_cpu_seconds_per_second": 0.5032976669773842,
+          "worker_memory": {
+            "rss_kib": 53304,
+            "hwm_kib": 73204,
+            "threads": 12
+          },
+          "host_idle_adjusted_cpu_seconds": 149.14242614107192,
+          "gateway_cpu_seconds_per_GB": 2.9418945312500004,
+          "host_busy_cpu_seconds_per_GB": 15.858968098958112,
+          "host_idle_adjusted_cpu_seconds_per_GB": 15.171552138374016,
+          "shutdown_seconds": 0.36388119799812557,
+          "listener_bind_seconds": 0.050386069000524
+        },
+        {
+          "MBps": 740.8098984939932,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 27.64041,
+          "p95_ms": 34.313825,
+          "requests": 240000,
+          "seconds": 13.269801092,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 2,
+          "gateway_cpu_seconds": 28.69,
+          "origin_cpu_seconds": 20.779999999999994,
+          "client_cpu_seconds": 13.222029,
+          "host_busy_cpu_seconds": 153.45000000000073,
+          "idle_cpu_seconds_per_second": 0.7232843751778198,
+          "worker_memory": {
+            "rss_kib": 55876,
+            "hwm_kib": 79484,
+            "threads": 11
+          },
+          "host_idle_adjusted_cpu_seconds": 143.85216020843956,
+          "gateway_cpu_seconds_per_GB": 2.918497721354167,
+          "host_busy_cpu_seconds_per_GB": 15.609741210937575,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.633398458703569,
+          "shutdown_seconds": 0.3638717380017624,
+          "listener_bind_seconds": 0.05041542899925844
+        },
+        {
+          "MBps": 767.9794982473087,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 25.122864000000003,
+          "p95_ms": 34.059343,
+          "requests": 240000,
+          "seconds": 12.800341705,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 3,
+          "gateway_cpu_seconds": 28.13,
+          "origin_cpu_seconds": 20.64,
+          "client_cpu_seconds": 13.177048,
+          "host_busy_cpu_seconds": 147.2699999999968,
+          "idle_cpu_seconds_per_second": 0.5132941251905518,
+          "worker_memory": {
+            "rss_kib": 52484,
+            "hwm_kib": 72804,
+            "threads": 12
+          },
+          "host_idle_adjusted_cpu_seconds": 140.69965980238868,
+          "gateway_cpu_seconds_per_GB": 2.8615315755208335,
+          "host_busy_cpu_seconds_per_GB": 14.981079101562175,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.312709533934397,
+          "shutdown_seconds": 0.4139407160000701,
+          "listener_bind_seconds": 0.05042878899985226
+        }
+      ],
+      "name": "capacity-4t",
+      "matched_peer_identities": false,
+      "readiness": "listener bound; not full worker readiness"
+    },
+    {
+      "worker_threads": 4,
+      "delay_one_way_ms": 0,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "native": "0b2accb756c8b05eec2dbfa69acf6470eb803b723b28e7457f9be853eabb6ddc"
+      },
+      "windows": [
+        {
+          "MBps": 778.0589770156157,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 24.873003,
+          "p95_ms": 33.611342,
+          "requests": 240000,
+          "seconds": 12.634517807,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 0,
+          "startup_seconds": 0.15749276100177667,
+          "gateway_cpu_seconds": 28.1,
+          "origin_cpu_seconds": 20.48,
+          "client_cpu_seconds": 12.940637,
+          "host_busy_cpu_seconds": 147.39999999999782,
+          "idle_cpu_seconds_per_second": 0.8865972351682158,
+          "worker_memory": {
+            "rss_kib": 56368,
+            "hwm_kib": 78736,
+            "threads": 11
+          },
+          "host_idle_adjusted_cpu_seconds": 136.19827144462803,
+          "gateway_cpu_seconds_per_GB": 2.858479817708334,
+          "host_busy_cpu_seconds_per_GB": 14.994303385416446,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.854804631004644,
+          "shutdown_seconds": 0.3638475980005751
+        },
+        {
+          "MBps": 776.7558546340078,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 25.005884,
+          "p95_ms": 33.534723,
+          "requests": 240000,
+          "seconds": 12.655714072,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 1,
+          "startup_seconds": 0.11807349499940756,
+          "gateway_cpu_seconds": 28.28,
+          "origin_cpu_seconds": 20.53,
+          "client_cpu_seconds": 12.978557,
+          "host_busy_cpu_seconds": 146.95999999999913,
+          "idle_cpu_seconds_per_second": 0.5999574318206082,
+          "worker_memory": {
+            "rss_kib": 56028,
+            "hwm_kib": 77064,
+            "threads": 11
+          },
+          "host_idle_adjusted_cpu_seconds": 139.36711028750608,
+          "gateway_cpu_seconds_per_GB": 2.8767903645833335,
+          "host_busy_cpu_seconds_per_GB": 14.949544270833245,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.17715558751486,
+          "shutdown_seconds": 0.36388804799935315
+        },
+        {
+          "MBps": 774.0687450424124,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 25.025384000000003,
+          "p95_ms": 33.938384,
+          "requests": 240000,
+          "seconds": 12.699647238,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 2,
+          "startup_seconds": 0.11747444399952656,
+          "gateway_cpu_seconds": 28.42,
+          "origin_cpu_seconds": 20.509999999999998,
+          "client_cpu_seconds": 13.001376,
+          "host_busy_cpu_seconds": 147.84000000000015,
+          "idle_cpu_seconds_per_second": 0.4766315713309799,
+          "worker_memory": {
+            "rss_kib": 54300,
+            "hwm_kib": 79260,
+            "threads": 10
+          },
+          "host_idle_adjusted_cpu_seconds": 141.78694718160307,
+          "gateway_cpu_seconds_per_GB": 2.891031901041667,
+          "host_busy_cpu_seconds_per_GB": 15.039062500000016,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.423314125732736,
+          "shutdown_seconds": 0.4139629359997343
+        },
+        {
+          "MBps": 777.1197528637761,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 24.855274,
+          "p95_ms": 33.667313,
+          "requests": 240000,
+          "seconds": 12.64978784,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 3,
+          "startup_seconds": 0.14702619799936656,
+          "gateway_cpu_seconds": 28.03,
+          "origin_cpu_seconds": 20.570000000000007,
+          "client_cpu_seconds": 12.995832999999998,
+          "host_busy_cpu_seconds": 146.76000000000204,
+          "idle_cpu_seconds_per_second": 0.5099642827813811,
+          "worker_memory": {
+            "rss_kib": 52900,
+            "hwm_kib": 74548,
+            "threads": 11
+          },
+          "host_idle_adjusted_cpu_seconds": 140.3090600168398,
+          "gateway_cpu_seconds_per_GB": 2.851359049479167,
+          "host_busy_cpu_seconds_per_GB": 14.929199218750208,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.272975669030743,
+          "shutdown_seconds": 0.36388011799863307
+        },
+        {
+          "MBps": 766.7685308020674,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 25.410745,
+          "p95_ms": 34.240824,
+          "requests": 240000,
+          "seconds": 12.82055745,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 4,
+          "startup_seconds": 0.17196527299893205,
+          "gateway_cpu_seconds": 28.27,
+          "origin_cpu_seconds": 20.5,
+          "client_cpu_seconds": 13.125657000000018,
+          "host_busy_cpu_seconds": 149.65000000000146,
+          "idle_cpu_seconds_per_second": 0.8032765025910188,
+          "worker_memory": {
+            "rss_kib": 53880,
+            "hwm_kib": 76360,
+            "threads": 11
+          },
+          "host_idle_adjusted_cpu_seconds": 139.35154745029823,
+          "gateway_cpu_seconds_per_GB": 2.875773111979167,
+          "host_busy_cpu_seconds_per_GB": 15.223185221354315,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.17557245384707,
+          "shutdown_seconds": 0.41413725600068574
+        },
+        {
+          "MBps": 758.9925864593059,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 25.570435,
+          "p95_ms": 34.465205,
+          "requests": 240000,
+          "seconds": 12.951905164,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 5,
+          "startup_seconds": 0.1007855190000555,
+          "gateway_cpu_seconds": 28.59,
+          "origin_cpu_seconds": 20.650000000000006,
+          "client_cpu_seconds": 13.019548999999984,
+          "host_busy_cpu_seconds": 150.53000000000247,
+          "idle_cpu_seconds_per_second": 0.5166275104341341,
+          "worker_memory": {
+            "rss_kib": 54084,
+            "hwm_kib": 80696,
+            "threads": 11
+          },
+          "host_idle_adjusted_cpu_seconds": 143.83868947974614,
+          "gateway_cpu_seconds_per_GB": 2.9083251953125004,
+          "host_busy_cpu_seconds_per_GB": 15.312703450521086,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.632028145319229,
+          "shutdown_seconds": 0.3638462270027958
+        },
+        {
+          "MBps": 767.8668806778984,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 25.134804,
+          "p95_ms": 33.834933,
+          "requests": 240000,
+          "seconds": 12.80221904,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 6,
+          "startup_seconds": 0.09617449800134636,
+          "gateway_cpu_seconds": 28.28,
+          "origin_cpu_seconds": 20.439999999999998,
+          "client_cpu_seconds": 13.023932000000002,
+          "host_busy_cpu_seconds": 148.86999999999898,
+          "idle_cpu_seconds_per_second": 0.606624005631383,
+          "worker_memory": {
+            "rss_kib": 56484,
+            "hwm_kib": 83300,
+            "threads": 11
+          },
+          "host_idle_adjusted_cpu_seconds": 141.10386660498384,
+          "gateway_cpu_seconds_per_GB": 2.8767903645833335,
+          "host_busy_cpu_seconds_per_GB": 15.143839518229065,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.353827576190577,
+          "shutdown_seconds": 0.3137565889992402
+        },
+        {
+          "MBps": 764.5056482910177,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 25.556556,
+          "p95_ms": 33.938793000000004,
+          "requests": 240000,
+          "seconds": 12.858505391,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 7,
+          "startup_seconds": 0.15702053100176272,
+          "gateway_cpu_seconds": 28.37,
+          "origin_cpu_seconds": 20.730000000000018,
+          "client_cpu_seconds": 13.054660000000013,
+          "host_busy_cpu_seconds": 150.5600000000013,
+          "idle_cpu_seconds_per_second": 0.4533018670824905,
+          "worker_memory": {
+            "rss_kib": 53352,
+            "hwm_kib": 74112,
+            "threads": 12
+          },
+          "host_idle_adjusted_cpu_seconds": 144.73121549837074,
+          "gateway_cpu_seconds_per_GB": 2.8859456380208335,
+          "host_busy_cpu_seconds_per_GB": 15.315755208333467,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.722820586992468,
+          "shutdown_seconds": 0.4139200860008714
+        }
+      ],
+      "name": "capacity-4t-matched",
+      "matched_peer_identities": true,
+      "readiness": "worker control reply"
+    },
+    {
+      "worker_threads": 2,
+      "delay_one_way_ms": 40,
+      "concurrency": 48,
+      "body_bytes": 40960,
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "native": "0b2accb756c8b05eec2dbfa69acf6470eb803b723b28e7457f9be853eabb6ddc"
+      },
+      "windows": [
+        {
+          "MBps": 48.13416222334282,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.442187999999994,
+          "p95_ms": 40.956818999999996,
+          "requests": 24000,
+          "seconds": 20.422917001,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 48,
+          "arm": "kernel",
+          "index": 0,
+          "startup_seconds": 0.12047700000039185,
+          "gateway_cpu_seconds": 3.71,
+          "origin_cpu_seconds": 2.76,
+          "client_cpu_seconds": 1.842544,
+          "host_busy_cpu_seconds": 30.350000000002183,
+          "idle_cpu_seconds_per_second": 0.4966283291109372,
+          "worker_memory": {
+            "rss_kib": 22216,
+            "hwm_kib": 23588,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 20.207400854224204,
+          "gateway_cpu_seconds_per_GB": 3.774007161458333,
+          "host_busy_cpu_seconds_per_GB": 30.873616536460553,
+          "host_idle_adjusted_cpu_seconds_per_GB": 20.556031142399295,
+          "shutdown_seconds": 0.363871786998061
+        },
+        {
+          "MBps": 48.13408397538304,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.440018,
+          "p95_ms": 40.932068,
+          "requests": 24000,
+          "seconds": 20.422950201,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 48,
+          "arm": "native",
+          "index": 1,
+          "startup_seconds": 0.09744008100096835,
+          "gateway_cpu_seconds": 3.75,
+          "origin_cpu_seconds": 2.7800000000000002,
+          "client_cpu_seconds": 1.8556529999999993,
+          "host_busy_cpu_seconds": 29.080000000001746,
+          "idle_cpu_seconds_per_second": 0.49329925030140975,
+          "worker_memory": {
+            "rss_kib": 21652,
+            "hwm_kib": 24492,
+            "threads": 8
+          },
+          "host_idle_adjusted_cpu_seconds": 19.00537397690542,
+          "gateway_cpu_seconds_per_GB": 3.814697265625,
+          "host_busy_cpu_seconds_per_GB": 29.58170572916844,
+          "host_idle_adjusted_cpu_seconds_per_GB": 19.333266171168436,
+          "shutdown_seconds": 0.3638808479990985
+        },
+        {
+          "MBps": 48.09114064844557,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.468057,
+          "p95_ms": 41.051559000000005,
+          "requests": 24000,
+          "seconds": 20.44118702,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 48,
+          "arm": "native",
+          "index": 2,
+          "startup_seconds": 0.1162593420012854,
+          "gateway_cpu_seconds": 3.65,
+          "origin_cpu_seconds": 2.75,
+          "client_cpu_seconds": 1.854076,
+          "host_busy_cpu_seconds": 30.049999999999272,
+          "idle_cpu_seconds_per_second": 0.5166312557265766,
+          "worker_memory": {
+            "rss_kib": 22132,
+            "hwm_kib": 24364,
+            "threads": 8
+          },
+          "host_idle_adjusted_cpu_seconds": 19.489443881314873,
+          "gateway_cpu_seconds_per_GB": 3.712972005208333,
+          "host_busy_cpu_seconds_per_GB": 30.568440755207593,
+          "host_idle_adjusted_cpu_seconds_per_GB": 19.825687542027662,
+          "shutdown_seconds": 0.3638797979983792
+        },
+        {
+          "MBps": 48.143150031778795,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.421808,
+          "p95_ms": 40.909779,
+          "requests": 24000,
+          "seconds": 20.419104262,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 48,
+          "arm": "kernel",
+          "index": 3,
+          "startup_seconds": 0.16479699699993944,
+          "gateway_cpu_seconds": 3.8799999999999994,
+          "origin_cpu_seconds": 2.8199999999999985,
+          "client_cpu_seconds": 1.8791219999999997,
+          "host_busy_cpu_seconds": 30.989999999997963,
+          "idle_cpu_seconds_per_second": 0.6499465665934699,
+          "worker_memory": {
+            "rss_kib": 20900,
+            "hwm_kib": 23860,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 17.71867329199697,
+          "gateway_cpu_seconds_per_GB": 3.946940104166666,
+          "host_busy_cpu_seconds_per_GB": 31.524658203122925,
+          "host_idle_adjusted_cpu_seconds_per_GB": 18.024366548662282,
+          "shutdown_seconds": 0.3638243480017991
+        }
+      ],
+      "name": "latency-48",
+      "matched_peer_identities": true,
+      "readiness": "worker control reply"
+    },
+    {
+      "worker_threads": 2,
+      "delay_one_way_ms": 40,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "native": "0b2accb756c8b05eec2dbfa69acf6470eb803b723b28e7457f9be853eabb6ddc"
+      },
+      "windows": [
+        {
+          "MBps": 400.22757367165286,
+          "bytes": 2457600000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 42.680662,
+          "p95_ms": 77.45152800000001,
+          "requests": 60000,
+          "seconds": 6.140506456,
+          "status": {
+            "200": 60000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 0,
+          "startup_seconds": 0.15696445999856223,
+          "gateway_cpu_seconds": 6.71,
+          "origin_cpu_seconds": 5.54,
+          "client_cpu_seconds": 3.929054,
+          "host_busy_cpu_seconds": 37.63999999999942,
+          "idle_cpu_seconds_per_second": 0.5499576703072523,
+          "worker_memory": {
+            "rss_kib": 65560,
+            "hwm_kib": 70212,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 34.26298137495102,
+          "gateway_cpu_seconds_per_GB": 2.7303059895833335,
+          "host_busy_cpu_seconds_per_GB": 15.315755208333098,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.94164281207317,
+          "shutdown_seconds": 0.3637750479974784
+        },
+        {
+          "MBps": 401.03916015236774,
+          "bytes": 2457600000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 43.185153,
+          "p95_ms": 76.51809499999999,
+          "requests": 60000,
+          "seconds": 6.128079859,
+          "status": {
+            "200": 60000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 1,
+          "startup_seconds": 0.1008970490001957,
+          "gateway_cpu_seconds": 6.69,
+          "origin_cpu_seconds": 5.460000000000001,
+          "client_cpu_seconds": 3.8694619999999977,
+          "host_busy_cpu_seconds": 36.95999999999913,
+          "idle_cpu_seconds_per_second": 0.5032974304436513,
+          "worker_memory": {
+            "rss_kib": 63000,
+            "hwm_kib": 70848,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 33.87575315341093,
+          "gateway_cpu_seconds_per_GB": 2.7221679687500004,
+          "host_busy_cpu_seconds_per_GB": 15.039062499999647,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.784079245365778,
+          "shutdown_seconds": 0.31377938000150607
+        },
+        {
+          "MBps": 403.2465167697228,
+          "bytes": 2457600000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 42.782583,
+          "p95_ms": 77.323757,
+          "requests": 60000,
+          "seconds": 6.094534975,
+          "status": {
+            "200": 60000
+          },
+          "submitted_peak": 500,
+          "arm": "native",
+          "index": 2,
+          "startup_seconds": 0.09861932299827458,
+          "gateway_cpu_seconds": 6.68,
+          "origin_cpu_seconds": 5.509999999999998,
+          "client_cpu_seconds": 3.8650899999999986,
+          "host_busy_cpu_seconds": 37.539999999997235,
+          "idle_cpu_seconds_per_second": 0.4532841177082551,
+          "worker_memory": {
+            "rss_kib": 62944,
+            "hwm_kib": 74812,
+            "threads": 8
+          },
+          "host_idle_adjusted_cpu_seconds": 34.777444091012256,
+          "gateway_cpu_seconds_per_GB": 2.7180989583333335,
+          "host_busy_cpu_seconds_per_GB": 15.275065104165543,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.15097822713715,
+          "shutdown_seconds": 0.36382962800053065
+        },
+        {
+          "MBps": 402.5715385324852,
+          "bytes": 2457600000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 42.851582,
+          "p95_ms": 75.99446499999999,
+          "requests": 60000,
+          "seconds": 6.104753478,
+          "status": {
+            "200": 60000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 3,
+          "startup_seconds": 0.15114816799905384,
+          "gateway_cpu_seconds": 6.659999999999999,
+          "origin_cpu_seconds": 5.510000000000002,
+          "client_cpu_seconds": 3.9093730000000004,
+          "host_busy_cpu_seconds": 37.580000000001746,
+          "idle_cpu_seconds_per_second": 0.4966315821279935,
+          "worker_memory": {
+            "rss_kib": 61268,
+            "hwm_kib": 72604,
+            "threads": 8
+          },
+          "host_idle_adjusted_cpu_seconds": 34.548186621721236,
+          "gateway_cpu_seconds_per_GB": 2.7099609375,
+          "host_busy_cpu_seconds_per_GB": 15.291341145834044,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.05769312407277,
+          "shutdown_seconds": 0.3639190880021488
+        }
+      ],
+      "name": "latency-500",
+      "matched_peer_identities": true,
+      "readiness": "worker control reply"
+    }
+  ],
+  "managed_validation": {
+    "tunnels": 500,
+    "provider_profiles_read": false,
+    "binary_sha256": "0b2accb756c8b05eec2dbfa69acf6470eb803b723b28e7457f9be853eabb6ddc",
+    "ip_wg_unexecutable": true,
+    "startup_seconds": 7.614,
+    "test_tls_verification": true,
+    "single_endpoint_tls_dns_500_kernel_tunnels": {
+      "requests": 1000,
+      "successful": 1000,
+      "bytes": 40960000,
+      "correct_lane_headers": true
+    },
+    "all_500_owned": true,
+    "all_500_handshakes_observed": true,
+    "down_lane_withheld_and_other_lane_works": true,
+    "automatic_routing_avoids_down_tunnel": true,
+    "recovery_without_restart": true,
+    "host_fallback_trap_not_reached": true,
+    "fetch_status": {
+      "active": 0,
+      "http2": true,
+      "kernel_health_fresh": true,
+      "listen": "127.0.0.1:15500",
+      "max_inflight": 512,
+      "max_pending": 1024,
+      "origins": 1,
+      "queued": 0,
+      "rejected": 0,
+      "requests": 1003,
+      "retries": 0,
+      "successful_attempts": 1001,
+      "timeouts": 1,
+      "tls_verification": true,
+      "unavailable_tunnels": 0
+    },
+    "worker_rss_KiB": 104812,
+    "shutdown_samples": [
+      {
+        "seconds": 5.0,
+        "worker_alive": false,
+        "remaining_namespaces": 410
+      },
+      {
+        "seconds": 10.0,
+        "worker_alive": false,
+        "remaining_namespaces": 321
+      },
+      {
+        "seconds": 15.01,
+        "worker_alive": false,
+        "remaining_namespaces": 233
+      },
+      {
+        "seconds": 20.01,
+        "worker_alive": false,
+        "remaining_namespaces": 143
+      },
+      {
+        "seconds": 25.01,
+        "worker_alive": false,
+        "remaining_namespaces": 54
+      }
+    ],
+    "shutdown_seconds": 28.183,
+    "graceful_cleanup": true,
+    "worker_uid": 65534,
+    "sigkill_cleanup_restart_passed": true,
+    "unchanged": {
+      "routes": true,
+      "namespaces": true,
+      "carrier": true
+    }
+  },
+  "worker_cpu_profiles": {
+    "kernel": {
+      "event": "cycles:u",
+      "sample_frequency_hz": 99,
+      "lost_samples": 0,
+      "symbols_at_least_one_percent": [
+        {
+          "percent": 9.69,
+          "symbol": "crypto/internal/fips140/aes/gcm.gcmAesDec.abi0"
+        },
+        {
+          "percent": 5.94,
+          "symbol": "runtime.memmove"
+        },
+        {
+          "percent": 2.13,
+          "symbol": "runtime.selectgo"
+        },
+        {
+          "percent": 1.99,
+          "symbol": "internal/runtime/maps.memHashAES"
+        },
+        {
+          "percent": 1.78,
+          "symbol": "runtime.unlock2"
+        },
+        {
+          "percent": 1.77,
+          "symbol": "runtime.lock2"
+        },
+        {
+          "percent": 1.55,
+          "symbol": "__vdso_clock_gettime"
+        },
+        {
+          "percent": 1.54,
+          "symbol": "internal/runtime/maps.(*Iter).Next"
+        },
+        {
+          "percent": 1.43,
+          "symbol": "runtime.tryDeferToSpanScan"
+        },
+        {
+          "percent": 1.37,
+          "symbol": "runtime.mallocgcSmallScanNoHeader"
+        },
+        {
+          "percent": 1.35,
+          "symbol": "net/textproto.CanonicalMIMEHeaderKey"
+        },
+        {
+          "percent": 1.33,
+          "symbol": "runtime.mallocgc"
+        },
+        {
+          "percent": 1.07,
+          "symbol": "strings.ToLower"
+        }
+      ],
+      "native_setup_symbols_observed": false
+    },
+    "native": {
+      "event": "cycles:u",
+      "sample_frequency_hz": 99,
+      "lost_samples": 0,
+      "symbols_at_least_one_percent": [
+        {
+          "percent": 9.01,
+          "symbol": "crypto/internal/fips140/aes/gcm.gcmAesDec.abi0"
+        },
+        {
+          "percent": 5.97,
+          "symbol": "runtime.memmove"
+        },
+        {
+          "percent": 2.09,
+          "symbol": "runtime.selectgo"
+        },
+        {
+          "percent": 1.73,
+          "symbol": "runtime.lock2"
+        },
+        {
+          "percent": 1.71,
+          "symbol": "runtime.mallocgcSmallScanNoHeader"
+        },
+        {
+          "percent": 1.58,
+          "symbol": "strings.ToLower"
+        },
+        {
+          "percent": 1.55,
+          "symbol": "internal/runtime/maps.(*Iter).Next"
+        },
+        {
+          "percent": 1.46,
+          "symbol": "runtime.unlock2"
+        },
+        {
+          "percent": 1.34,
+          "symbol": "__vdso_clock_gettime"
+        },
+        {
+          "percent": 1.27,
+          "symbol": "internal/runtime/maps.memHashAES"
+        },
+        {
+          "percent": 1.22,
+          "symbol": "runtime.tryDeferToSpanScan"
+        },
+        {
+          "percent": 1.16,
+          "symbol": "runtime.findRunnable"
+        },
+        {
+          "percent": 1.12,
+          "symbol": "net/textproto.CanonicalMIMEHeaderKey"
+        }
+      ],
+      "native_setup_symbols_observed": false
+    }
+  }
+}

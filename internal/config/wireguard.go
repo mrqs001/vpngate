@@ -166,21 +166,3 @@ func (w WireGuard) IPv4() bool {
 	}
 	return false
 }
-
-// Setconf is piped to wg's stdin, never passed in argv or written to state/logs.
-func (w WireGuard) Setconf(endpoint string) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "[Interface]\nPrivateKey = %s\n[Peer]\nPublicKey = %s\n", w.PrivateKey, w.PublicKey)
-	if w.PresharedKey != "" {
-		fmt.Fprintf(&b, "PresharedKey = %s\n", w.PresharedKey)
-	}
-	fmt.Fprintf(&b, "Endpoint = %s\nPersistentKeepalive = %d\nAllowedIPs = ", endpoint, w.Keepalive)
-	for i, p := range w.Allowed {
-		if i > 0 {
-			b.WriteString(", ")
-		}
-		b.WriteString(p.String())
-	}
-	b.WriteByte('\n')
-	return b.String()
-}

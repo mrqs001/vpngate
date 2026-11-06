@@ -1,4 +1,4 @@
-.PHONY: build test check bench
+.PHONY: build test test-native check bench
 
 build:
 	mkdir -p bin
@@ -6,6 +6,9 @@ build:
 
 test:
 	go test -race ./... -count=1 -timeout=90s
+
+test-native:
+	VPNGATE_NATIVE_TEST=1 go test -race ./internal/daemon -run TestNativeNetworkIsolation -v -count=1 -timeout=90s
 
 check:
 	go vet ./...

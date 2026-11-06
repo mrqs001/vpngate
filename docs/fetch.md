@@ -10,7 +10,7 @@ The application submits URLs, request headers and bodies. vpngate returns a stre
 
 ## Configuration
 
-Use [examples/fetch.json](../examples/fetch.json), replacing the namespace, interface and DNS settings with your own. Set one `fetch.listen` and omit each tunnel's `listen` to expose only one port. For managed WireGuard tunnels, use [fetch-managed.json](../examples/fetch-managed.json) with your own provider profiles. Tunnel `listen` values may also be retained for fixed proxy clients.
+Use [fetch-native.json](../examples/fetch-native.json) to create WireGuard tunnels from one JSON file, [fetch-managed.json](../examples/fetch-managed.json) for existing provider profile files, or [fetch.json](../examples/fetch.json) to attach to existing namespaces. Set one `fetch.listen` and omit each tunnel's `listen` to expose only one port. Tunnel `listen` values may also be retained for fixed proxy clients. Both managed formats use native setup without external VPN tools.
 
 ```sh
 ./bin/vpngate check --config my-fetch.json

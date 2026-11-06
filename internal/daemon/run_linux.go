@@ -206,7 +206,7 @@ func Run(ctx context.Context, p Plan) (result error) {
 	if err = writeState(); err != nil {
 		return err
 	}
-	cleanup, err := p.setup(ctx, Commands{}, func(r Resource) error {
+	cleanup, err := p.setup(ctx, NativeNetwork{}, func(r Resource) error {
 		for i, old := range state.Resources {
 			if old.ID == r.ID {
 				state.Resources[i] = r
@@ -576,19 +576,12 @@ func Cleanup(name string) error {
 		if r.Namespace != ns || r.Device != dev {
 			return errors.New("state contains a resource outside this instance")
 		}
-		if r.HostDevice {
-			if _, e := net.InterfaceByName(dev); e == nil {
-				if err = (Commands{}).Run(context.Background(), "/usr/bin/ip", []string{"link", "delete", dev}, ""); err != nil {
-					return err
-				}
-			}
-		}
 		// A broker/frontend from an unclean shutdown must be gone before deleting its namespace.
 		// The child is coupled to the supervisor through PR_SET_PDEATHSIG.
-		if _, e := os.Stat("/var/run/netns/" + ns); os.IsNotExist(e) {
-			continue
+		if err = (NativeNetwork{}).DeleteDevice(context.Background(), r); err != nil {
+			return err
 		}
-		if err = (Commands{}).Run(context.Background(), "/usr/bin/ip", []string{"netns", "delete", ns}, ""); err != nil {
+		if err = (NativeNetwork{}).DeleteNamespace(context.Background(), r); err != nil {
 			return err
 		}
 	}

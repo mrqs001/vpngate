@@ -14,7 +14,9 @@ make build
 ./bin/vpngate check --config examples/attach.json
 ```
 
-The Go tests use local fixtures and do not need VPN credentials, root or internet access after dependencies are downloaded. The worker-entrypoint test is a subprocess helper and intentionally skips when invoked directly. CI runs the race detector, vet, formatting checks and a static build.
+The ordinary Go tests use local fixtures and do not need VPN credentials, root or internet access after dependencies are downloaded. The worker-entrypoint test is a subprocess helper and intentionally skips when invoked directly. CI runs the race detector, vet, formatting checks, a static build and the native kernel setup tests.
+
+For native setup changes, also run `make test-native`. This requires `unshare`, kernel WireGuard and permission to create user/network/mount namespaces. The test starts in disposable namespaces before mounting a private `/run`; it never configures host interfaces. It exercises kernel keys/peers, IPv4/IPv6, rollback, resource collisions and identity-safe cleanup without executing `ip` or `wg`. CI uses a privileged runner to create this isolation when unprivileged user namespaces are restricted.
 
 ## Performance changes
 
@@ -22,7 +24,7 @@ The Go tests use local fixtures and do not need VPN credentials, root or interne
 make bench
 ```
 
-Compare the same workload on the same machine before and after a change. Include client and gateway CPU when comparing fetch with CONNECT, because TLS processing moves between them. Report throughput, latency, errors and memory alongside CPU. A local benchmark is not evidence of internet throughput; see [validation](docs/validation.md).
+Compare the same workload on the same machine before and after a change. Include client and gateway CPU when comparing fetch with CONNECT, because TLS processing moves between them. Kernel-vs-userspace networking comparisons also need total machine CPU so kernel encryption and packet processing are counted. Report throughput, latency, errors and memory alongside CPU. A local benchmark is not evidence of internet throughput; see [validation](docs/validation.md).
 
 ## Pull requests
 

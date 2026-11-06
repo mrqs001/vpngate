@@ -73,9 +73,10 @@ func CanonicalOrigin(raw string) (string, error) {
 }
 
 type Tunnel struct {
-	ID        string `json:"id"`
-	Listen    string `json:"listen"`
-	WireGuard string `json:"wireguard_config,omitempty"`
+	ID        string           `json:"id"`
+	Listen    string           `json:"listen"`
+	WireGuard string           `json:"wireguard_config,omitempty"`
+	Inline    *InlineWireGuard `json:"wireguard,omitempty"`
 	// Attach is deliberately explicit: an attached namespace is never configured or deleted.
 	Attach    string   `json:"attach_namespace,omitempty"`
 	Interface string   `json:"outbound_interface,omitempty"`
@@ -240,8 +241,26 @@ func (c *Config) Validate() error {
 				return errors.New("non-loopback listeners require proxy authentication")
 			}
 		}
-		if (t.WireGuard == "") == (t.Attach == "") {
-			return fmt.Errorf("tunnel %s: specify exactly one of wireguard_config or attach_namespace", t.ID)
+		modes := 0
+		if t.WireGuard != "" {
+			modes++
+		}
+		if t.Inline != nil {
+			modes++
+		}
+		if t.Attach != "" {
+			modes++
+		}
+		if modes != 1 {
+			return fmt.Errorf("tunnel %s: specify exactly one of wireguard, wireguard_config or attach_namespace", t.ID)
+		}
+		if t.Inline != nil {
+			if _, err := t.Inline.Profile(); err != nil {
+				return fmt.Errorf("tunnel %s: %w", t.ID, err)
+			}
+			if len(t.DNS) == 0 {
+				return fmt.Errorf("tunnel %s: inline WireGuard requires explicit DNS", t.ID)
+			}
 		}
 		if t.Attach != "" {
 			if !identifier.MatchString(t.Attach) || namespaces[t.Attach] {
