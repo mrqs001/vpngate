@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```text
 BSD 3-Clause License
 
-Copyright (c) 2009, The Go Authors. Extensions copyright (c) 2011, Miek Gieben. 
+Copyright (c) 2009, The Go Authors. Extensions copyright (c) 2011, Miek Gieben.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
