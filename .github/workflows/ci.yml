@@ -31,6 +31,11 @@ jobs:
         run: make check
       - name: Build static binary
         run: make build
+      - name: Native kernel setup in disposable namespaces
+        run: |
+          sudo modprobe wireguard
+          go test -c -race -o bin/daemon.test ./internal/daemon
+          sudo env VPNGATE_NATIVE_TEST=1 ./bin/daemon.test -test.run '^TestNativeNetworkIsolation$' -test.v -test.timeout=90s
       - name: Validate examples
         run: |
           ./bin/vpngate check --config examples/fetch.json

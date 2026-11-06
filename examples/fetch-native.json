@@ -1,0 +1,21 @@
+{
+  "name": "default",
+  "public_status": true,
+  "fetch": {
+    "listen": "127.0.0.1:15400"
+  },
+  "tunnels": [
+    {
+      "id": "exit-a",
+      "dns": ["10.64.0.1"],
+      "wireguard": {
+        "private_key": "REPLACE_WITH_YOUR_PRIVATE_KEY",
+        "peer_public_key": "REPLACE_WITH_PROVIDER_PUBLIC_KEY",
+        "endpoint": "192.0.2.10:51820",
+        "addresses": ["10.64.0.2/32"],
+        "mtu": 1420,
+        "persistent_keepalive_seconds": 25
+      }
+    }
+  ]
+}
