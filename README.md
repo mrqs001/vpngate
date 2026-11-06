@@ -5,17 +5,21 @@
 
 A standalone Linux gateway that turns VPN tunnels into one local HTTP fetch endpoint or conventional HTTP/CONNECT proxies.
 
+**This branch includes an experimental [fully embedded backend](docs/embedded.md):**
+one unprivileged process, inline JSON tunnel settings and no installed VPN tools.
+See the [measurements](docs/embedded-benchmark.md) before choosing it for performance.
+
 ```text
 application → /fetch → adaptive routing → selected VPN → website
 ```
 
-One static binary runs a privileged supervisor/socket broker and an unprivileged worker. There is no per-tunnel proxy daemon, database, container or application SDK. Managed mode creates kernel WireGuard tunnels; attach mode reuses existing VPN network namespaces.
+Kernel mode uses one static binary for a privileged supervisor/socket broker and an unprivileged worker. There is no per-tunnel proxy daemon, database, container or application SDK. Managed mode creates kernel WireGuard tunnels; attach mode reuses existing VPN network namespaces. The embedded prototype runs WireGuard and TCP/IP inside the unprivileged gateway process instead.
 
 ## Features
 
 - One request-aware endpoint with adaptive routing, persistent HTTPS/HTTP2 connections, bounded retries and tunnel recovery.
 - Optional fixed HTTP/CONNECT endpoints for clients that use a conventional proxy URL.
-- 1–500 tunnels, per-tunnel DNS and interface binding, with no fallback to the host connection when a bound VPN fails.
+- 1–500 kernel tunnels, per-tunnel DNS and interface binding, with no fallback to the host connection when a bound VPN fails. Embedded scaling has separate limits and validation.
 - Streaming request/response bodies, unchanged compression, configurable concurrency and unlimited bandwidth by default.
 - Optional aggregate download cap, session affinity and read-only status/health snapshots.
 
@@ -23,7 +27,7 @@ Fetch mode is an HTTP API: applications send a target URL in a header. Setting `
 
 ## Build
 
-Requires Linux and Go 1.27.1 or later. Managed mode also requires kernel WireGuard, `iproute2` (`/usr/bin/ip`) and `wireguard-tools` (`/usr/bin/wg`). The static executable needs no Go installation. HTTPS certificate verification uses the system CA certificates.
+Building requires Linux and Go 1.27.1 or later. Managed kernel mode also requires kernel WireGuard, `iproute2` (`/usr/bin/ip`) and `wireguard-tools` (`/usr/bin/wg`). Embedded runtime needs none of those VPN components. The static executable needs no Go installation. HTTPS certificate verification uses system CA certificates, with embedded public roots as a fallback.
 
 ```sh
 git clone https://github.com/mrqs001/vpngate.git
@@ -33,7 +37,7 @@ make test
 make check
 ```
 
-The two direct dependencies are `golang.org/x/sys` for Linux operations and `github.com/miekg/dns` for DNS. Versions and checksums are pinned in `go.mod` and `go.sum`.
+Dependencies include Linux syscall support, DNS, WireGuard, gVisor TCP/IP and fallback CA roots. Versions and checksums are pinned in `go.mod` and `go.sum`; see [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ## One endpoint
 
@@ -41,12 +45,13 @@ Choose an example and copy it to `vpngate.json`:
 
 | Example | Use |
 | --- | --- |
+| [embedded.json](examples/embedded.json) | Experimental single-process VPN; follow the [embedded instructions](docs/embedded.md), without sudo |
 | [fetch-managed.json](examples/fetch-managed.json) | Create WireGuard tunnels from your provider profiles |
 | [fetch.json](examples/fetch.json) | Attach to existing VPN namespaces |
 | [managed.json](examples/managed.json) | Managed tunnels with one conventional proxy port per tunnel |
 | [attach.json](examples/attach.json) | An existing tunnel with a conventional proxy port |
 
-Edit the copied configuration to match your profiles or namespaces, then:
+For a kernel-backed example, edit the copied configuration to match your profiles or namespaces, then:
 
 ```sh
 ./bin/vpngate check --config vpngate.json
@@ -69,7 +74,7 @@ WireGuard profiles need one interface, one peer, an endpoint, an IPv4 address, f
 
 For attach mode, set `attach_namespace`, `outbound_interface` and VPN-reachable DNS servers. Explicit interface binding prevents traffic from following another route if the VPN fails. Restart vpngate after an external manager recreates a namespace: the gateway refuses to silently adopt a changed namespace identity.
 
-## Service installation
+## Kernel-mode service installation
 
 Use the same instance name in the JSON and systemd unit. For `default`:
 

@@ -73,9 +73,10 @@ func CanonicalOrigin(raw string) (string, error) {
 }
 
 type Tunnel struct {
-	ID        string `json:"id"`
-	Listen    string `json:"listen"`
-	WireGuard string `json:"wireguard_config,omitempty"`
+	ID        string             `json:"id"`
+	Listen    string             `json:"listen"`
+	WireGuard string             `json:"wireguard_config,omitempty"`
+	Embedded  *EmbeddedWireGuard `json:"wireguard,omitempty"`
 	// Attach is deliberately explicit: an attached namespace is never configured or deleted.
 	Attach    string   `json:"attach_namespace,omitempty"`
 	Interface string   `json:"outbound_interface,omitempty"`
@@ -146,7 +147,11 @@ func (c *Config) Validate() error {
 	if len(c.Tunnels) < 1 || len(c.Tunnels) > 500 {
 		return errors.New("configure between 1 and 500 tunnels")
 	}
-	if c.RunAs == "" {
+	if c.Embedded() {
+		if c.Fetch == nil || c.PublicStatus || c.RunAs != "" || c.RelayMode == "splice" {
+			return errors.New("embedded prototype requires fetch; public_status, run_as and splice are unsupported")
+		}
+	} else if c.RunAs == "" {
 		c.RunAs = "nobody"
 	}
 	if c.WorkerThreads == 0 {
@@ -186,6 +191,7 @@ func (c *Config) Validate() error {
 		return errors.New("username and password_env must be supplied together")
 	}
 	ids, listeners, namespaces := map[string]bool{}, map[string]bool{}, map[string]bool{}
+	embeddedPeers := map[string]bool{}
 	if f := c.Fetch; f != nil {
 		a, err := netip.ParseAddrPort(f.Listen)
 		if err != nil || !a.Addr().IsLoopback() || a.Port() < 1024 || a.Port() >= 8000 && a.Port() <= 8999 {
@@ -240,8 +246,41 @@ func (c *Config) Validate() error {
 				return errors.New("non-loopback listeners require proxy authentication")
 			}
 		}
-		if (t.WireGuard == "") == (t.Attach == "") {
-			return fmt.Errorf("tunnel %s: specify exactly one of wireguard_config or attach_namespace", t.ID)
+		modes := 0
+		if t.WireGuard != "" {
+			modes++
+		}
+		if t.Attach != "" {
+			modes++
+		}
+		if t.Embedded != nil {
+			modes++
+		}
+		if modes != 1 {
+			return fmt.Errorf("tunnel %s: specify exactly one of wireguard_config, attach_namespace or wireguard", t.ID)
+		}
+		if (t.Embedded != nil) != c.Embedded() {
+			return errors.New("embedded and kernel tunnels cannot be mixed in one instance")
+		}
+		if t.Embedded != nil {
+			if t.Listen != "" {
+				return errors.New("embedded prototype uses only the shared fetch listener")
+			}
+			if err := t.Embedded.Validate(); err != nil {
+				return fmt.Errorf("tunnel %s: %w", t.ID, err)
+			}
+			identity := t.Embedded.PrivateKey + ":" + t.Embedded.PublicKey
+			if embeddedPeers[identity] {
+				return errors.New("embedded tunnels must not reuse the same client key and remote peer")
+			}
+			embeddedPeers[identity] = true
+			if len(t.DNS) == 0 {
+				return fmt.Errorf("tunnel %s: embedded tunnels require explicit DNS", t.ID)
+			}
+			t.IPv6 = false
+			for _, address := range t.Embedded.Addresses {
+				t.IPv6 = t.IPv6 || netip.MustParsePrefix(address).Addr().Is6()
+			}
 		}
 		if t.Attach != "" {
 			if !identifier.MatchString(t.Attach) || namespaces[t.Attach] {
@@ -274,6 +313,11 @@ func (c *Config) Validate() error {
 		}
 	}
 	return nil
+}
+
+// Embedded selects the process-local backend. Validate rejects mixed backends.
+func (c Config) Embedded() bool {
+	return len(c.Tunnels) > 0 && c.Tunnels[0].Embedded != nil
 }
 
 func ValidRate(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) && v >= 0 && v <= 1e6 }

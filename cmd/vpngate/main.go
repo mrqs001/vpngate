@@ -9,10 +9,13 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"runtime/pprof"
 	"syscall"
 
 	"github.com/mrqs001/vpngate/internal/config"
 	"github.com/mrqs001/vpngate/internal/daemon"
+	"github.com/mrqs001/vpngate/internal/embedded"
+	_ "golang.org/x/crypto/x509roots/fallback" // HTTPS also works without a system CA bundle.
 )
 
 func main() {
@@ -23,11 +26,11 @@ func main() {
 }
 func run(args []string) error {
 	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h" || args[0] == "help") {
-		fmt.Println("vpngate — standalone WireGuard to HTTP proxy gateway\n\nCommands:\n  check --config FILE       validate explicit profiles without network changes\n  run --config FILE         start in foreground (sudo); Ctrl-C cleans up owned tunnels\n  status --name NAME         show status\n  limit --name NAME --mbps N change aggregate download cap (0 = unlimited)\n  stop --name NAME           stop and clean up owned resources\n  cleanup --name NAME        recover recorded resources after abnormal exit\n  version                   print version")
+		fmt.Println("vpngate — standalone WireGuard to HTTP proxy gateway\n\nCommands:\n  check --config FILE       validate configuration without network changes\n  run --config FILE         start in foreground (embedded: no sudo); Ctrl-C stops\n  status --name NAME         show kernel-mode status\n  limit --name NAME --mbps N change kernel-mode download cap (0 = unlimited)\n  stop --name NAME           stop and clean up owned kernel resources\n  cleanup --name NAME        recover recorded kernel resources after abnormal exit\n  version                   print version\n\nEmbedded prototype: inline wireguard settings; one fetch listener; no VPN tools.\n  run --config FILE --cpu-profile FILE  record a local CPU profile")
 		return nil
 	}
 	if len(args) > 0 && args[0] == "version" {
-		fmt.Println("vpngate 0.4.0")
+		fmt.Println("vpngate 0.5.0-embedded-prototype")
 		return nil
 	}
 	if len(args) == 0 {
@@ -40,6 +43,7 @@ func run(args []string) error {
 	path := f.String("config", "vpngate.json", "explicit gateway JSON configuration")
 	name := f.String("name", "default", "gateway instance name")
 	rate := f.Float64("mbps", 0, "aggregate download MB/s; 0 = unlimited")
+	profile := f.String("cpu-profile", "", "write CPU profile (embedded run only)")
 	if err := f.Parse(args[1:]); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
@@ -48,6 +52,9 @@ func run(args []string) error {
 	}
 	if f.NArg() != 0 {
 		return errors.New("unexpected positional argument")
+	}
+	if *profile != "" && args[0] != "run" {
+		return errors.New("cpu-profile is only valid with run")
 	}
 	if !regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`).MatchString(*name) {
 		return errors.New("invalid instance name")
@@ -66,6 +73,32 @@ func run(args []string) error {
 		})
 		if nameGiven && c.Name != *name {
 			return errors.New("instance name does not match configuration")
+		}
+		if c.Embedded() {
+			if _, err := c.Runtime(); err != nil {
+				return err
+			}
+			if args[0] == "check" {
+				fmt.Printf("valid: %s, %d embedded tunnels; no network changes\n", c.Name, len(c.Tunnels))
+				return nil
+			}
+			if *profile != "" {
+				file, err := os.OpenFile(*profile, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+				if err != nil {
+					return errors.New("cannot create CPU profile")
+				}
+				defer file.Close()
+				if err := pprof.StartCPUProfile(file); err != nil {
+					return err
+				}
+				defer pprof.StopCPUProfile()
+			}
+			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			defer stop()
+			return embedded.Run(ctx, c)
+		}
+		if *profile != "" {
+			return errors.New("cpu-profile requires embedded mode")
 		}
 		p, err := daemon.Prepare(c)
 		if err != nil {

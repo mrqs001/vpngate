@@ -1,0 +1,21 @@
+{
+  "name": "embedded-demo",
+  "worker_threads": 2,
+  "fetch": {
+    "listen": "127.0.0.1:15400"
+  },
+  "tunnels": [
+    {
+      "id": "vpn-a",
+      "dns": ["10.17.0.1"],
+      "wireguard": {
+        "private_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=",
+        "peer_public_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI=",
+        "endpoint": "192.0.2.1:51820",
+        "addresses": ["10.17.0.2/32"],
+        "mtu": 1420,
+        "persistent_keepalive_seconds": 25
+      }
+    }
+  ]
+}

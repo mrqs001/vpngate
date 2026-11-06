@@ -1,0 +1,835 @@
+{
+  "date": "2026-11-06",
+  "hardware": "AMD Ryzen 7 7700, 8 cores / 16 threads",
+  "kernel": "7.2.8-arch1-2",
+  "go": "1.27.1",
+  "scope": "isolated synthetic VPN peers; no provider profiles read; no live setup changes",
+  "transport": "40,960-byte HTTPS responses, verified TLS; HTTP2 upstream for fetch, HTTP1.1 for conventional proxy; 6 tunnels",
+  "client": "Rust reqwest 0.13.5, Tokio 1.53.3, 6 runtime workers",
+  "measured_requests": 1608000,
+  "measured_bytes": 65863680000,
+  "live_state_unchanged": {
+    "routes_sha256": true,
+    "namespace_inodes": true,
+    "carrier": true,
+    "live_binary_sha256": true,
+    "live_pids": true
+  },
+  "series": {
+    "throughput-2": {
+      "test": "six synthetic WireGuard tunnels to the same kernel-WireGuard TLS origin; HTTP2 fetch, actual Rust downloader client",
+      "isolated": true,
+      "provider_profiles_read": false,
+      "embedded_uid": 65534,
+      "embedded_path_empty": true,
+      "worker_threads": 2,
+      "delay_one_way_ms": 0,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "windows": [
+        {
+          "MBps": 636.2967011275009,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 33.348165,
+          "p95_ms": 38.761078,
+          "requests": 240000,
+          "seconds": 15.449396457,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 0,
+          "startup_seconds": 0.05129092599963769,
+          "gateway_cpu_seconds": 24.470000000000002,
+          "origin_cpu_seconds": 22.360000000000003,
+          "client_cpu_seconds": 15.090357000000001,
+          "host_busy_cpu_seconds": 145.48999999999796,
+          "idle_cpu_seconds_per_second": 0.6599449674090857,
+          "worker_memory": {
+            "rss_kib": 48612,
+            "hwm_kib": 65264,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 135.29424855869306,
+          "gateway_cpu_seconds_per_GB": 2.489217122395834,
+          "host_busy_cpu_seconds_per_GB": 14.800008138020628,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.76284266751028,
+          "shutdown_seconds": 0.3638836789978086
+        },
+        {
+          "MBps": 247.90887041974707,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 85.210643,
+          "p95_ms": 97.224449,
+          "requests": 240000,
+          "seconds": 39.653280592,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "embedded",
+          "index": 1,
+          "startup_seconds": 0.051602085997728864,
+          "gateway_cpu_seconds": 70.85,
+          "origin_cpu_seconds": 22.009999999999998,
+          "client_cpu_seconds": 15.798707000000004,
+          "host_busy_cpu_seconds": 197.72999999999956,
+          "idle_cpu_seconds_per_second": 0.9066047667140342,
+          "worker_memory": {
+            "rss_kib": 292092,
+            "hwm_kib": 564728,
+            "threads": 14
+          },
+          "host_idle_adjusted_cpu_seconds": 161.78014679944326,
+          "gateway_cpu_seconds_per_GB": 7.207234700520833,
+          "host_busy_cpu_seconds_per_GB": 20.114135742187457,
+          "host_idle_adjusted_cpu_seconds_per_GB": 16.45712756341993,
+          "shutdown_seconds": 0.03130459000021801
+        },
+        {
+          "MBps": 252.7499763520302,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 84.41022,
+          "p95_ms": 91.51467600000001,
+          "requests": 240000,
+          "seconds": 38.893772185,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "embedded",
+          "index": 2,
+          "startup_seconds": 0.0515818460007722,
+          "gateway_cpu_seconds": 69.5,
+          "origin_cpu_seconds": 21.700000000000003,
+          "client_cpu_seconds": 15.576248999999997,
+          "host_busy_cpu_seconds": 179.28999999999724,
+          "idle_cpu_seconds_per_second": 0.7799461808541399,
+          "worker_memory": {
+            "rss_kib": 280804,
+            "hwm_kib": 550336,
+            "threads": 14
+          },
+          "host_idle_adjusted_cpu_seconds": 148.95495092529552,
+          "gateway_cpu_seconds_per_GB": 7.069905598958334,
+          "host_busy_cpu_seconds_per_GB": 18.238321940103887,
+          "host_idle_adjusted_cpu_seconds_per_GB": 15.15248117322749,
+          "shutdown_seconds": 0.031370330001664115
+        },
+        {
+          "MBps": 654.1633137123005,
+          "bytes": 9830400000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 32.353264,
+          "p95_ms": 37.634595,
+          "requests": 240000,
+          "seconds": 15.027440081,
+          "status": {
+            "200": 240000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 3,
+          "startup_seconds": 0.05038654300005874,
+          "gateway_cpu_seconds": 23.82,
+          "origin_cpu_seconds": 22.289999999999992,
+          "client_cpu_seconds": 14.872701,
+          "host_busy_cpu_seconds": 143.63000000000102,
+          "idle_cpu_seconds_per_second": 0.7032791194212091,
+          "worker_memory": {
+            "rss_kib": 44516,
+            "hwm_kib": 70224,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 133.06151517268034,
+          "gateway_cpu_seconds_per_GB": 2.4230957031250004,
+          "host_busy_cpu_seconds_per_GB": 14.610799153645939,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.535717282377153,
+          "shutdown_seconds": 0.36384775999977137
+        }
+      ],
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "embedded": "583bf8309156a6ab78fb15b5a61dc49887fbec18bf6c23ddda3977a455d56ef1"
+      },
+      "log_bytes": 114
+    },
+    "throughput-4": {
+      "test": "six synthetic WireGuard tunnels to the same kernel-WireGuard TLS origin; HTTP2 fetch, actual Rust downloader client",
+      "isolated": true,
+      "provider_profiles_read": false,
+      "embedded_uid": 65534,
+      "embedded_path_empty": true,
+      "worker_threads": 4,
+      "delay_one_way_ms": 0,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "windows": [
+        {
+          "MBps": 960.4216085789196,
+          "bytes": 4915200000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 20.814326,
+          "p95_ms": 24.600156000000002,
+          "requests": 120000,
+          "seconds": 5.117752408,
+          "status": {
+            "200": 120000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 0,
+          "startup_seconds": 0.05126959600238479,
+          "gateway_cpu_seconds": 12.15,
+          "origin_cpu_seconds": 8.95,
+          "client_cpu_seconds": 5.6147029999999996,
+          "host_busy_cpu_seconds": 65.72999999999956,
+          "idle_cpu_seconds_per_second": 0.7166152461776131,
+          "worker_memory": {
+            "rss_kib": 55236,
+            "hwm_kib": 73708,
+            "threads": 10
+          },
+          "host_idle_adjusted_cpu_seconds": 62.06254059826457,
+          "gateway_cpu_seconds_per_GB": 2.4719238281250004,
+          "host_busy_cpu_seconds_per_GB": 13.372802734374913,
+          "host_idle_adjusted_cpu_seconds_per_GB": 12.626656208956822,
+          "shutdown_seconds": 0.36383710100199096
+        },
+        {
+          "MBps": 481.1918925344302,
+          "bytes": 4915200000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.594192,
+          "p95_ms": 52.447479,
+          "requests": 120000,
+          "seconds": 10.214635941,
+          "status": {
+            "200": 120000
+          },
+          "submitted_peak": 500,
+          "arm": "embedded",
+          "index": 1,
+          "startup_seconds": 0.05148437699972419,
+          "gateway_cpu_seconds": 35.93,
+          "origin_cpu_seconds": 9.829999999999998,
+          "client_cpu_seconds": 7.501231999999998,
+          "host_busy_cpu_seconds": 80.77000000000044,
+          "idle_cpu_seconds_per_second": 0.44663532998770267,
+          "worker_memory": {
+            "rss_kib": 327368,
+            "hwm_kib": 608648,
+            "threads": 16
+          },
+          "host_idle_adjusted_cpu_seconds": 76.20778270578765,
+          "gateway_cpu_seconds_per_GB": 7.309977213541667,
+          "host_busy_cpu_seconds_per_GB": 16.432698567708425,
+          "host_idle_adjusted_cpu_seconds_per_GB": 15.50451308304599,
+          "shutdown_seconds": 0.031356341001810506
+        },
+        {
+          "MBps": 483.9814370881253,
+          "bytes": 4915200000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.23972,
+          "p95_ms": 52.724979,
+          "requests": 120000,
+          "seconds": 10.155761406,
+          "status": {
+            "200": 120000
+          },
+          "submitted_peak": 500,
+          "arm": "embedded",
+          "index": 2,
+          "startup_seconds": 0.051745107000897406,
+          "gateway_cpu_seconds": 35.77,
+          "origin_cpu_seconds": 9.849999999999998,
+          "client_cpu_seconds": 7.492686999999993,
+          "host_busy_cpu_seconds": 79.95000000000073,
+          "idle_cpu_seconds_per_second": 0.6232860664347682,
+          "worker_memory": {
+            "rss_kib": 334480,
+            "hwm_kib": 688584,
+            "threads": 16
+          },
+          "host_idle_adjusted_cpu_seconds": 73.62005542160496,
+          "gateway_cpu_seconds_per_GB": 7.277425130208335,
+          "host_busy_cpu_seconds_per_GB": 16.26586914062515,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.978038619304396,
+          "shutdown_seconds": 0.03133170399814844
+        },
+        {
+          "MBps": 959.5802166407896,
+          "bytes": 4915200000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 20.87216,
+          "p95_ms": 25.240527,
+          "requests": 120000,
+          "seconds": 5.122239824,
+          "status": {
+            "200": 120000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 3,
+          "startup_seconds": 0.05039809199661249,
+          "gateway_cpu_seconds": 12.17,
+          "origin_cpu_seconds": 8.86,
+          "client_cpu_seconds": 5.691954000000006,
+          "host_busy_cpu_seconds": 65.2599999999984,
+          "idle_cpu_seconds_per_second": 0.7866044829608596,
+          "worker_memory": {
+            "rss_kib": 55984,
+            "hwm_kib": 76444,
+            "threads": 11
+          },
+          "host_idle_adjusted_cpu_seconds": 61.23082319163935,
+          "gateway_cpu_seconds_per_GB": 2.475992838541667,
+          "host_busy_cpu_seconds_per_GB": 13.277180989583009,
+          "host_idle_adjusted_cpu_seconds_per_GB": 12.457442869392773,
+          "shutdown_seconds": 0.36390131400185055
+        }
+      ],
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "embedded": "00863ec02f644cbffa9a4648e7f51b016dd8d967772b42be2eee0a3775f5036c"
+      },
+      "log_bytes": 280
+    },
+    "delay40-500-2": {
+      "test": "six synthetic WireGuard tunnels to the same kernel-WireGuard TLS origin; HTTP2 fetch, actual Rust downloader client",
+      "isolated": true,
+      "provider_profiles_read": false,
+      "embedded_uid": 65534,
+      "embedded_path_empty": true,
+      "worker_threads": 2,
+      "delay_one_way_ms": 40,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "windows": [
+        {
+          "MBps": 401.34023944307995,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fixed",
+          "p50_ms": 40.59452,
+          "p95_ms": 80.56733000000001,
+          "requests": 24000,
+          "seconds": 2.449393067,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 500,
+          "arm": "legacy",
+          "index": 0,
+          "startup_seconds": 0.051483496001310414,
+          "gateway_cpu_seconds": 1.44,
+          "origin_cpu_seconds": 1.9399999999999997,
+          "client_cpu_seconds": 2.4397960000000003,
+          "host_busy_cpu_seconds": 16.25,
+          "idle_cpu_seconds_per_second": 0.5899584854077261,
+          "worker_memory": {
+            "rss_kib": 95016,
+            "hwm_kib": 95016,
+            "threads": 13
+          },
+          "host_idle_adjusted_cpu_seconds": 14.804959776024495,
+          "gateway_cpu_seconds_per_GB": 1.46484375,
+          "host_busy_cpu_seconds_per_GB": 16.530354817708332,
+          "host_idle_adjusted_cpu_seconds_per_GB": 15.060383886743667,
+          "shutdown_seconds": 0.36385635300030117
+        },
+        {
+          "MBps": 312.79981591012984,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 56.295494000000005,
+          "p95_ms": 86.39322000000001,
+          "requests": 24000,
+          "seconds": 3.142712847,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 1,
+          "startup_seconds": 0.05039110600046115,
+          "gateway_cpu_seconds": 2.9,
+          "origin_cpu_seconds": 2.2800000000000002,
+          "client_cpu_seconds": 1.7113499999999995,
+          "host_busy_cpu_seconds": 17.529999999998836,
+          "idle_cpu_seconds_per_second": 0.5032978119165706,
+          "worker_memory": {
+            "rss_kib": 57656,
+            "hwm_kib": 71768,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 15.94827950062164,
+          "gateway_cpu_seconds_per_GB": 2.950032552083333,
+          "host_busy_cpu_seconds_per_GB": 17.83243815104048,
+          "host_idle_adjusted_cpu_seconds_per_GB": 16.22342885398523,
+          "shutdown_seconds": 0.41392509000070277
+        },
+        {
+          "MBps": 237.19776723606765,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 78.239828,
+          "p95_ms": 115.38259400000001,
+          "requests": 24000,
+          "seconds": 4.14438977,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 500,
+          "arm": "embedded",
+          "index": 2,
+          "startup_seconds": 0.05159665799874347,
+          "gateway_cpu_seconds": 6.24,
+          "origin_cpu_seconds": 1.54,
+          "client_cpu_seconds": 1.4879869999999995,
+          "host_busy_cpu_seconds": 16.55999999999767,
+          "idle_cpu_seconds_per_second": 0.43996050020039895,
+          "worker_memory": {
+            "rss_kib": 399308,
+            "hwm_kib": 399308,
+            "threads": 14
+          },
+          "host_idle_adjusted_cpu_seconds": 14.736632203763055,
+          "gateway_cpu_seconds_per_GB": 6.34765625,
+          "host_busy_cpu_seconds_per_GB": 16.84570312499763,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.990877485924331,
+          "shutdown_seconds": 0.031355477000033716
+        },
+        {
+          "MBps": 241.88472729192338,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 77.851698,
+          "p95_ms": 111.29061,
+          "requests": 24000,
+          "seconds": 4.06408462,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 500,
+          "arm": "embedded",
+          "index": 3,
+          "startup_seconds": 0.051579218001279514,
+          "gateway_cpu_seconds": 6.180000000000001,
+          "origin_cpu_seconds": 1.5,
+          "client_cpu_seconds": 1.4824139999999995,
+          "host_busy_cpu_seconds": 15.25,
+          "idle_cpu_seconds_per_second": 0.5632931196506753,
+          "worker_memory": {
+            "rss_kib": 517056,
+            "hwm_kib": 517056,
+            "threads": 14
+          },
+          "host_idle_adjusted_cpu_seconds": 12.96072909587587,
+          "gateway_cpu_seconds_per_GB": 6.286621093750001,
+          "host_busy_cpu_seconds_per_GB": 15.513102213541666,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.184335424678416,
+          "shutdown_seconds": 0.0634370059997309
+        },
+        {
+          "MBps": 316.4170155651315,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 55.796094999999994,
+          "p95_ms": 84.88522900000001,
+          "requests": 24000,
+          "seconds": 3.106786145,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 500,
+          "arm": "kernel",
+          "index": 4,
+          "startup_seconds": 0.0503998469976068,
+          "gateway_cpu_seconds": 2.8899999999999997,
+          "origin_cpu_seconds": 2.2699999999999996,
+          "client_cpu_seconds": 1.698857999999996,
+          "host_busy_cpu_seconds": 16.75,
+          "idle_cpu_seconds_per_second": 0.5799581826955926,
+          "worker_memory": {
+            "rss_kib": 63176,
+            "hwm_kib": 70100,
+            "threads": 10
+          },
+          "host_idle_adjusted_cpu_seconds": 14.948193953321955,
+          "gateway_cpu_seconds_per_GB": 2.939860026041666,
+          "host_busy_cpu_seconds_per_GB": 17.038981119791668,
+          "host_idle_adjusted_cpu_seconds_per_GB": 15.206089226605178,
+          "shutdown_seconds": 0.36385575600070297
+        },
+        {
+          "MBps": 403.97396401280884,
+          "bytes": 983040000,
+          "egress": null,
+          "mode": "fixed",
+          "p50_ms": 40.716443,
+          "p95_ms": 80.527574,
+          "requests": 24000,
+          "seconds": 2.43342415,
+          "status": {
+            "200": 24000
+          },
+          "submitted_peak": 500,
+          "arm": "legacy",
+          "index": 5,
+          "startup_seconds": 0.05097636800201144,
+          "gateway_cpu_seconds": 1.37,
+          "origin_cpu_seconds": 1.8899999999999988,
+          "client_cpu_seconds": 2.345512000000001,
+          "host_busy_cpu_seconds": 15.319999999999709,
+          "idle_cpu_seconds_per_second": 0.6199482343211821,
+          "worker_memory": {
+            "rss_kib": 92312,
+            "hwm_kib": 92312,
+            "threads": 14
+          },
+          "host_idle_adjusted_cpu_seconds": 13.811402994852685,
+          "gateway_cpu_seconds_per_GB": 1.3936360677083335,
+          "host_busy_cpu_seconds_per_GB": 15.584309895833037,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.049685663709193,
+          "shutdown_seconds": 0.4139151569979731
+        }
+      ],
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "embedded": "00863ec02f644cbffa9a4648e7f51b016dd8d967772b42be2eee0a3775f5036c"
+      },
+      "log_bytes": 232
+    },
+    "delay40-16-2": {
+      "test": "six synthetic WireGuard tunnels to the same kernel-WireGuard TLS origin; HTTP2 fetch, actual Rust downloader client",
+      "isolated": true,
+      "provider_profiles_read": false,
+      "embedded_uid": 65534,
+      "embedded_path_empty": true,
+      "worker_threads": 2,
+      "delay_one_way_ms": 40,
+      "concurrency": 16,
+      "body_bytes": 40960,
+      "windows": [
+        {
+          "MBps": 15.264463568217318,
+          "bytes": 163840000,
+          "egress": null,
+          "mode": "fixed",
+          "p50_ms": 40.377604999999996,
+          "p95_ms": 40.651514999999996,
+          "requests": 4000,
+          "seconds": 10.733426646,
+          "status": {
+            "200": 4000
+          },
+          "submitted_peak": 16,
+          "arm": "legacy",
+          "index": 0,
+          "startup_seconds": 0.051252511999337,
+          "gateway_cpu_seconds": 0.29,
+          "origin_cpu_seconds": 0.31999999999999995,
+          "client_cpu_seconds": 0.5056329999999999,
+          "host_busy_cpu_seconds": 8.510000000002037,
+          "idle_cpu_seconds_per_second": 0.6299543125629843,
+          "worker_memory": {
+            "rss_kib": 16836,
+            "hwm_kib": 16836,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 1.7484315957758891,
+          "gateway_cpu_seconds_per_GB": 1.7700195312499998,
+          "host_busy_cpu_seconds_per_GB": 51.94091796876243,
+          "host_idle_adjusted_cpu_seconds_per_GB": 10.671579564061823,
+          "shutdown_seconds": 0.3638947539984656
+        },
+        {
+          "MBps": 15.95605546193288,
+          "bytes": 163840000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.508175,
+          "p95_ms": 41.068466,
+          "requests": 4000,
+          "seconds": 10.268201962,
+          "status": {
+            "200": 4000
+          },
+          "submitted_peak": 16,
+          "arm": "kernel",
+          "index": 1,
+          "startup_seconds": 0.05040245199779747,
+          "gateway_cpu_seconds": 0.6399999999999999,
+          "origin_cpu_seconds": 0.48,
+          "client_cpu_seconds": 0.353762,
+          "host_busy_cpu_seconds": 9.389999999999418,
+          "idle_cpu_seconds_per_second": 0.48662959652309373,
+          "worker_memory": {
+            "rss_kib": 20040,
+            "hwm_kib": 20040,
+            "threads": 9
+          },
+          "host_idle_adjusted_cpu_seconds": 4.393189022213719,
+          "gateway_cpu_seconds_per_GB": 3.906249999999999,
+          "host_busy_cpu_seconds_per_GB": 57.31201171874644,
+          "host_idle_adjusted_cpu_seconds_per_GB": 26.813897840659905,
+          "shutdown_seconds": 0.3638715500019316
+        },
+        {
+          "MBps": 15.904844522594747,
+          "bytes": 163840000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.635647,
+          "p95_ms": 41.250097,
+          "requests": 4000,
+          "seconds": 10.301263855,
+          "status": {
+            "200": 4000
+          },
+          "submitted_peak": 16,
+          "arm": "embedded",
+          "index": 2,
+          "startup_seconds": 0.051654003000294324,
+          "gateway_cpu_seconds": 1.91,
+          "origin_cpu_seconds": 0.52,
+          "client_cpu_seconds": 0.36786100000000044,
+          "host_busy_cpu_seconds": 10.289999999997235,
+          "idle_cpu_seconds_per_second": 0.6766157276529869,
+          "worker_memory": {
+            "rss_kib": 184944,
+            "hwm_kib": 184944,
+            "threads": 15
+          },
+          "host_idle_adjusted_cpu_seconds": 3.3200028610009964,
+          "gateway_cpu_seconds_per_GB": 11.657714843749998,
+          "host_busy_cpu_seconds_per_GB": 62.80517578123312,
+          "host_idle_adjusted_cpu_seconds_per_GB": 20.263689337164283,
+          "shutdown_seconds": 0.007254691998241469
+        },
+        {
+          "MBps": 15.903048448882963,
+          "bytes": 163840000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.637837000000005,
+          "p95_ms": 41.253288,
+          "requests": 4000,
+          "seconds": 10.302427269,
+          "status": {
+            "200": 4000
+          },
+          "submitted_peak": 16,
+          "arm": "embedded",
+          "index": 3,
+          "startup_seconds": 0.051517874002456665,
+          "gateway_cpu_seconds": 1.9000000000000001,
+          "origin_cpu_seconds": 0.53,
+          "client_cpu_seconds": 0.36932999999999927,
+          "host_busy_cpu_seconds": 11.299999999999272,
+          "idle_cpu_seconds_per_second": 0.8666032847462237,
+          "worker_memory": {
+            "rss_kib": 171956,
+            "hwm_kib": 171956,
+            "threads": 14
+          },
+          "host_idle_adjusted_cpu_seconds": 2.3718826878248045,
+          "gateway_cpu_seconds_per_GB": 11.5966796875,
+          "host_busy_cpu_seconds_per_GB": 68.96972656249555,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.47682304580569,
+          "shutdown_seconds": 0.007213950997538632
+        },
+        {
+          "MBps": 15.961825406866572,
+          "bytes": 163840000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 40.518567,
+          "p95_ms": 40.968408999999994,
+          "requests": 4000,
+          "seconds": 10.264490171,
+          "status": {
+            "200": 4000
+          },
+          "submitted_peak": 16,
+          "arm": "kernel",
+          "index": 4,
+          "startup_seconds": 0.05040579300111858,
+          "gateway_cpu_seconds": 0.6399999999999999,
+          "origin_cpu_seconds": 0.4800000000000004,
+          "client_cpu_seconds": 0.3480159999999999,
+          "host_busy_cpu_seconds": 8.859999999996944,
+          "idle_cpu_seconds_per_second": 0.5632857723000745,
+          "worker_memory": {
+            "rss_kib": 19708,
+            "hwm_kib": 19804,
+            "threads": 8
+          },
+          "host_idle_adjusted_cpu_seconds": 3.0781587267586854,
+          "gateway_cpu_seconds_per_GB": 3.906249999999999,
+          "host_busy_cpu_seconds_per_GB": 54.07714843748134,
+          "host_idle_adjusted_cpu_seconds_per_GB": 18.78758988500174,
+          "shutdown_seconds": 0.3638604689986096
+        },
+        {
+          "MBps": 15.266646458269614,
+          "bytes": 163840000,
+          "egress": null,
+          "mode": "fixed",
+          "p50_ms": 40.364458,
+          "p95_ms": 40.681588999999995,
+          "requests": 4000,
+          "seconds": 10.731891935,
+          "status": {
+            "200": 4000
+          },
+          "submitted_peak": 16,
+          "arm": "legacy",
+          "index": 5,
+          "startup_seconds": 0.050400995001837146,
+          "gateway_cpu_seconds": 0.31,
+          "origin_cpu_seconds": 0.33000000000000007,
+          "client_cpu_seconds": 0.5150340000000009,
+          "host_busy_cpu_seconds": 9.340000000000146,
+          "idle_cpu_seconds_per_second": 0.6166222998693377,
+          "worker_memory": {
+            "rss_kib": 16844,
+            "hwm_kib": 16844,
+            "threads": 8
+          },
+          "host_idle_adjusted_cpu_seconds": 2.7224761130912487,
+          "gateway_cpu_seconds_per_GB": 1.8920898437499998,
+          "host_busy_cpu_seconds_per_GB": 57.00683593750088,
+          "host_idle_adjusted_cpu_seconds_per_GB": 16.616675494941703,
+          "shutdown_seconds": 0.36381978500139667
+        }
+      ],
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "embedded": "00863ec02f644cbffa9a4648e7f51b016dd8d967772b42be2eee0a3775f5036c"
+      },
+      "log_bytes": 232
+    }
+  },
+  "diagnostic_profiles": {
+    "upstream-profile": {
+      "test": "six synthetic WireGuard tunnels to the same kernel-WireGuard TLS origin; HTTP2 fetch, actual Rust downloader client",
+      "isolated": true,
+      "provider_profiles_read": false,
+      "embedded_uid": 65534,
+      "embedded_path_empty": true,
+      "worker_threads": 2,
+      "delay_one_way_ms": 0,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "windows": [
+        {
+          "MBps": 271.6531645495421,
+          "bytes": 1966080000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 72.845974,
+          "p95_ms": 89.610641,
+          "requests": 48000,
+          "seconds": 7.237464004,
+          "status": {
+            "200": 48000
+          },
+          "submitted_peak": 500,
+          "arm": "embedded",
+          "index": 0,
+          "startup_seconds": 0.05280343899721629,
+          "gateway_cpu_seconds": 13.22,
+          "origin_cpu_seconds": 4.41,
+          "client_cpu_seconds": 3.2368060000000005,
+          "host_busy_cpu_seconds": 33.409999999999854,
+          "idle_cpu_seconds_per_second": 0.9765956453760634,
+          "worker_memory": {
+            "rss_kib": 302644,
+            "hwm_kib": 561844,
+            "threads": 14
+          },
+          "host_idle_adjusted_cpu_seconds": 26.34192417012745,
+          "gateway_cpu_seconds_per_GB": 6.724039713541667,
+          "host_busy_cpu_seconds_per_GB": 16.993204752604093,
+          "host_idle_adjusted_cpu_seconds_per_GB": 13.398195480411504,
+          "shutdown_seconds": 0.03135689000191633
+        }
+      ],
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "embedded": "66854985f7091f04f6dc9d1bb3b548eb5f5a3f9092813e5ebf2fbce2bae33fc7"
+      },
+      "log_bytes": 0
+    },
+    "batch-profile": {
+      "test": "six synthetic WireGuard tunnels to the same kernel-WireGuard TLS origin; HTTP2 fetch, actual Rust downloader client",
+      "isolated": true,
+      "provider_profiles_read": false,
+      "embedded_uid": 65534,
+      "embedded_path_empty": true,
+      "worker_threads": 2,
+      "delay_one_way_ms": 0,
+      "concurrency": 500,
+      "body_bytes": 40960,
+      "windows": [
+        {
+          "MBps": 301.83719215562667,
+          "bytes": 1966080000,
+          "egress": null,
+          "mode": "fetch",
+          "p50_ms": 65.64868799999999,
+          "p95_ms": 82.748287,
+          "requests": 48000,
+          "seconds": 6.513710209,
+          "status": {
+            "200": 48000
+          },
+          "submitted_peak": 500,
+          "arm": "embedded",
+          "index": 0,
+          "startup_seconds": 0.05288754899811465,
+          "gateway_cpu_seconds": 11.68,
+          "origin_cpu_seconds": 3.52,
+          "client_cpu_seconds": 2.889246,
+          "host_busy_cpu_seconds": 31.599999999998545,
+          "idle_cpu_seconds_per_second": 0.566626421836354,
+          "worker_memory": {
+            "rss_kib": 491672,
+            "hwm_kib": 491672,
+            "threads": 14
+          },
+          "host_idle_adjusted_cpu_seconds": 27.909159691393945,
+          "gateway_cpu_seconds_per_GB": 5.940755208333333,
+          "host_busy_cpu_seconds_per_GB": 16.072591145832593,
+          "host_idle_adjusted_cpu_seconds_per_GB": 14.195332688086927,
+          "shutdown_seconds": 0.06337212300059036
+        }
+      ],
+      "binary_sha256": {
+        "kernel": "dc12a474367287994ded6d7cc233d58e8419428729dd946531b4d2b79e66853f",
+        "embedded": "583bf8309156a6ab78fb15b5a61dc49887fbec18bf6c23ddda3977a455d56ef1"
+      },
+      "log_bytes": 0
+    }
+  },
+  "final_binary_sha256": "00863ec02f644cbffa9a4648e7f51b016dd8d967772b42be2eee0a3775f5036c"
+}
