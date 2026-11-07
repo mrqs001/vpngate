@@ -2,7 +2,7 @@
 
 Enable `"public_status": true` in the instance JSON. The supervisor publishes an atomic read-only snapshot at `/run/vpngate/<name>/status.json`. It is readable by ordinary local users, contains counters and sanitized health only, and provides no control operations. The existing `control.sock` remains root-only. Disabling public status removes periodic observation in fixed-proxy-only mode; fetch mode still samples kernel health privately for routing.
 
-Version 0.4.0 adds `proxy.fetch`, empty lane `listen` strings when fixed listeners are omitted, and HTTP 403/429 counters. Fetch mode can observe HTTPS response outcomes and counts upstream request attempts rather than opaque CONNECT streams. Existing CONNECT semantics are unchanged. See the [fetch status additions](fetch.md#status); additive fields retain schema version 1.
+Version 0.4.0 adds `proxy.fetch`, empty lane `listen` strings when fixed listeners are omitted, and HTTP 403/429 counters. Fetch mode can observe HTTPS response outcomes and counts upstream request attempts rather than opaque CONNECT streams. Existing CONNECT semantics are unchanged. Version 0.6.0 adds the fetch concurrency controllers per origin and tunnel (`proxy.fetch.controllers`), queued requests by priority, and the configured `initial_per_tunnel`, `timeout_seconds` and `max_attempts`. See the [fetch status additions](fetch.md#status); additive fields retain schema version 1.
 
 ```sh
 vpngate status --name default
