@@ -55,7 +55,19 @@ The client, gateway and origins share one process, so CPU per GB, 4.0 to 4.5 CPU
 
 ### Production crawler
 
-Pending: the A/B on the production crawler and its six tunnels runs after this build is installed.
+The same production crawler then compared the two modes on 0.6.0 with its real workload. It stored every response: about 80% image tiles and the rest small metadata answers from a second origin, 31 KB on average. It kept 500 requests in flight through the six managed tunnels. The fixed proxies used the crawler's own per-lane limiter. Fetch mode used the shared endpoint with `Vpngate-Priority: bulk`. After a 30-second warm-up, four 180-second windows ran in ABBA order; the last ended after 147 seconds, when the crawl finished.
+
+| Mode, median of 2 windows | MB/s | Requests/s | Errors | Client CPU-s/GB | Gateway CPU-s/GB | Total CPU-s/GB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Fixed proxies + client limiter | 94.8 | 3,086 | 0 | 63.1 | 7.1 | 70.3 |
+| Fetch endpoint | 95.7 | 3,107 | 0 | 63.2 | 7.3 | 70.6 |
+
+Client CPU includes parsing and storing every response. Gateway CPU covers the supervisor and the worker. Throughput uses the crawler's own run time and bytes.
+
+- Throughput was equal. Without each window's start-up ramp, the 30-second rates averaged 97.5 MB/s through the fixed proxies and 96.9 MB/s through fetch, inside their ±1% spread. Both modes kept 500 requests in flight at the same rate, so upstream latency set it. On 0.5.0, the tiles-only comparison had given fetch 27% of the fixed proxies' throughput.
+- Total CPU per GB differed by 0.4%, less than the spread between windows of one mode.
+- Neither mode had a refusal, gateway retry, timeout, failed request, 403, 429 or 5xx. The crawler records no latency percentiles.
+- The first fetch window started at 32 per tunnel, with about 290 requests queued in the gateway. Within 24 seconds every tunnel was at 101-110 and nothing was queued. After that, each tunnel carried 23-96 requests for the tile origin, with limits of 60-127. The controllers were steady in 90% of the 2-second status samples, and the deepest back-off, to 63, was undone within 20 seconds. The metadata origin's controllers stayed at 32-73.
 
 ## Reproducible local checks
 
