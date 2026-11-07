@@ -15,7 +15,7 @@ This retains one ordinary local proxy connection, kernel TCP and kernel WireGuar
 
 ## Forwarding
 
-Optional request-aware fetch mode exposes one loopback `/fetch` listener. The worker performs HTTPS with the same namespace dialer and uses a persistent transport per lane. HTTP/2 is negotiated by default with HTTP/1.1 fallback. A bounded origin scheduler owns concurrency, eligible-route selection, grouped pending queues and retries. It streams raw bodies without a JSON/base64 envelope. DNS and socket creation still go through the existing VPN path; no payload traverses the privileged supervisor. The complete contract and failure policy are in [fetch.md](fetch.md).
+Optional request-aware fetch mode exposes one loopback `/fetch` listener. The worker performs HTTPS with the same namespace dialer and uses a persistent transport per lane. HTTP/2 is negotiated by default with HTTP/1.1 fallback. A bounded origin scheduler owns per-tunnel concurrency for each origin, eligible-route selection, grouped pending queues in two priority classes, and retries. It streams raw bodies without a JSON/base64 envelope. DNS and socket creation still go through the existing VPN path; no payload traverses the privileged supervisor. The complete contract and failure policy are in [fetch.md](fetch.md).
 
 CONNECT carries one pinned byte stream. TLS, HTTP2 and client pools remain end to end. Its default relay uses reusable 64 KiB download and 16 KiB upload buffers. Early bytes read with CONNECT headers are drained before switching to the raw socket. Half-close, cancellation, backpressure and inactivity timeout apply in both directions.
 

@@ -27,7 +27,7 @@ func run(args []string) error {
 		return nil
 	}
 	if len(args) > 0 && args[0] == "version" {
-		fmt.Println("vpngate 0.5.0")
+		fmt.Println("vpngate 0.6.0")
 		return nil
 	}
 	if len(args) == 0 {
