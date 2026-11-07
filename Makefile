@@ -1,4 +1,4 @@
-.PHONY: build test test-native check bench
+.PHONY: build test test-native check bench bench-load
 
 build:
 	mkdir -p bin
@@ -16,3 +16,6 @@ check:
 
 bench:
 	GOMAXPROCS=2 go test ./internal/proxy -run '^$$' -bench '^BenchmarkFetchTLS$$' -benchmem -count=3
+
+bench-load:
+	GOMAXPROCS=4 go test ./internal/proxy -run '^$$' -bench '^BenchmarkFetchSchedulerLoad$$' -benchtime=1x -v -timeout=20m
