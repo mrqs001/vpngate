@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -289,7 +290,7 @@ func TestFetchQueueCancellationBoundsAndShutdown(t *testing.T) {
 	go func() { defer close(waiting); c.Do(request) }()
 	for deadline := time.Now().Add(time.Second); ; {
 		g.fetch.mu.Lock()
-		n := g.fetch.queue.Len()
+		n := g.fetch.queued[classInteractive]
 		g.fetch.mu.Unlock()
 		if n == 1 {
 			break
@@ -310,7 +311,7 @@ func TestFetchQueueCancellationBoundsAndShutdown(t *testing.T) {
 	g.Close()
 	g.fetch.mu.Lock()
 	defer g.fetch.mu.Unlock()
-	if g.fetch.active != 0 || g.fetch.queue.Len() != 0 {
+	if g.fetch.active != 0 || g.fetch.pending != 0 {
 		t.Fatal("reservations leaked")
 	}
 }
@@ -376,15 +377,15 @@ func TestFetchSchedulerFairnessAndStaleCompletion(t *testing.T) {
 	defer o.Close()
 	g, _, _ := fetchGateway(t, []*httptest.Server{o}, nil)
 	s := g.fetch
-	p, e := s.acquire(context.Background(), "test", 80, -1, -1)
+	p, _, e := s.acquire(context.Background(), "test", 80, -1, -1, classInteractive)
 	if e != nil {
 		t.Fatal(e)
 	}
-	old, e := s.acquire(context.Background(), "test", 80, -1, -1)
+	old, _, e := s.acquire(context.Background(), "test", 80, -1, -1, classInteractive)
 	if e != nil {
 		t.Fatal(e)
 	}
-	p.blockLane()
+	p.blockLane(time.Now())
 	p.finish(-1, 0, 0)
 	old.finish(1, time.Millisecond, 0)
 	s.mu.Lock()
@@ -397,14 +398,14 @@ func TestFetchSchedulerFairnessAndStaleCompletion(t *testing.T) {
 	defer cancel()
 	blocked := make(chan error, 1)
 	go func() {
-		p, e := s.acquire(ctx, "test", 80, -1, -1)
+		p, _, e := s.acquire(ctx, "test", 80, -1, -1, classInteractive)
 		if p != nil {
 			p.finish(0, 0, 0)
 		}
 		blocked <- e
 	}()
 	for i := 0; i < 20; i++ {
-		p, e := s.acquire(context.Background(), "other", 80, -1, -1)
+		p, _, e := s.acquire(context.Background(), "other", 80, -1, -1, classInteractive)
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -484,5 +485,303 @@ func BenchmarkFetchTLS(b *testing.B) {
 				}
 			})
 		})
+	}
+}
+
+type dispatched struct {
+	class fetchClass
+	p     *fetchPermit
+}
+
+// queueAt waits until the scheduler holds n waiters of a class.
+func queueAt(t *testing.T, s *fetchScheduler, class fetchClass, n int) {
+	t.Helper()
+	for deadline := time.Now().Add(2 * time.Second); ; {
+		s.mu.Lock()
+		queued := s.queued[class]
+		s.mu.Unlock()
+		if queued == n {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("%d of %d waiters queued", queued, n)
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+// priorityOrder holds the only slot, queues the given classes in order, then
+// releases one permit at a time and returns the order of dispatch.
+func priorityOrder(t *testing.T, classes []fetchClass) []fetchClass {
+	t.Helper()
+	s := simGateway(t, 1, func(c *config.Runtime) { c.Fetch.MaxInflight = 1 })
+	key := "https://tiles.test:443"
+	hold, _, err := s.acquire(context.Background(), key, 443, -1, -1, classBulk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := make(chan dispatched, len(classes))
+	counts := map[fetchClass]int{}
+	for _, class := range classes {
+		go func() {
+			p, _, err := s.acquire(context.Background(), key, 443, -1, -1, class)
+			if err != nil {
+				t.Error(err)
+			}
+			out <- dispatched{class, p}
+		}()
+		counts[class]++
+		queueAt(t, s, class, counts[class])
+	}
+	hold.finish(0, 0, 0)
+	var order []fetchClass
+	for range classes {
+		d := <-out
+		order = append(order, d.class)
+		d.p.finish(0, 0, 0)
+	}
+	return order
+}
+
+func TestFetchPriorityDispatchesInteractiveAheadOfBulk(t *testing.T) {
+	var classes []fetchClass
+	for range 16 {
+		classes = append(classes, classBulk)
+	}
+	for range 4 {
+		classes = append(classes, classInteractive)
+	}
+	order := priorityOrder(t, classes)
+	for i, class := range order[:4] {
+		if class != classInteractive {
+			t.Fatalf("dispatch %d was bulk while interactive work waited: %v", i, order)
+		}
+	}
+}
+
+func TestFetchPriorityDoesNotStarveBulk(t *testing.T) {
+	var classes []fetchClass
+	for range 4 {
+		classes = append(classes, classBulk)
+	}
+	for range 40 {
+		classes = append(classes, classInteractive)
+	}
+	order := priorityOrder(t, classes)
+	// Bulk gets every bulkEvery-th dispatch while interactive work waits.
+	for i, class := range order[:4*bulkEvery] {
+		if want := (i+1)%bulkEvery == 0; (class == classBulk) != want {
+			t.Fatalf("dispatch %d: %v", i, order)
+		}
+	}
+}
+
+func TestFetchPriorityHeader(t *testing.T) {
+	o := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for k := range r.Header {
+			if strings.HasPrefix(strings.ToLower(k), "vpngate-") {
+				t.Error("control header leaked:", k)
+			}
+		}
+		io.WriteString(w, "ok")
+	}))
+	defer o.Close()
+	_, endpoint, c := fetchGateway(t, []*httptest.Server{o}, nil)
+	for _, v := range []string{"interactive", "bulk", "Bulk", "INTERACTIVE"} {
+		r, b, e := fetchCall(c, endpoint, o.URL, map[string]string{"Vpngate-Priority": v})
+		if e != nil || r.StatusCode != 200 || string(b) != "ok" {
+			t.Fatal("priority", v, e)
+		}
+	}
+	r, _, e := fetchCall(c, endpoint, o.URL, map[string]string{"Vpngate-Priority": "urgent"})
+	if e != nil || r.StatusCode != 400 || r.Header.Get("Vpngate-Error") != "invalid_request" {
+		t.Fatal("unknown priority accepted", e)
+	}
+	req, _ := http.NewRequest("GET", endpoint, nil)
+	req.Header.Set("Vpngate-Target", o.URL)
+	req.Header.Add("Vpngate-Priority", "bulk")
+	req.Header.Add("Vpngate-Priority", "interactive")
+	r, e = c.Do(req)
+	if e != nil {
+		t.Fatal(e)
+	}
+	r.Body.Close()
+	if r.StatusCode != 400 || r.Header.Get("Vpngate-Error") != "invalid_request" {
+		t.Fatal("two priorities accepted")
+	}
+}
+
+// Every response vpngate makes itself carries Vpngate-Error, so a client
+// never has to infer one from a missing Vpngate-Lane.
+func TestFetchGatewayResponsesAreMarked(t *testing.T) {
+	o := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "ok") }))
+	defer o.Close()
+	g, endpoint, c := fetchGateway(t, []*httptest.Server{o}, nil)
+	check := func(name string, r *http.Response, e error, code int, reason string) {
+		t.Helper()
+		if e != nil {
+			t.Fatal(name, e)
+		}
+		if r.StatusCode != code || r.Header.Get("Vpngate-Error") != reason || r.Header.Get("Vpngate-Lane") != "" {
+			t.Fatalf("%s: %d %q", name, r.StatusCode, r.Header.Get("Vpngate-Error"))
+		}
+	}
+	for name, headers := range map[string]map[string]string{
+		"missing target":   {},
+		"relative target":  {"Vpngate-Target": "/path"},
+		"invalid timeout":  {"Vpngate-Target": o.URL, "Vpngate-Timeout-Ms": "0"},
+		"long session":     {"Vpngate-Target": o.URL, "Vpngate-Session": strings.Repeat("s", 129)},
+		"invalid priority": {"Vpngate-Target": o.URL, "Vpngate-Priority": "high"},
+	} {
+		req, _ := http.NewRequest("GET", endpoint, nil)
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+		r, e := c.Do(req)
+		if r != nil {
+			r.Body.Close()
+		}
+		check(name, r, e, 400, "invalid_request")
+	}
+	r, e := c.Get(strings.TrimSuffix(endpoint, "/fetch") + "/other")
+	if r != nil {
+		r.Body.Close()
+	}
+	check("wrong path", r, e, 400, "invalid_request")
+	g.cfg.Username, g.cfg.Password = "fixture", "secret"
+	r, _, e = fetchCall(c, endpoint, o.URL, nil)
+	check("no credentials", r, e, 407, "proxy_auth")
+	g.cfg.Username = ""
+	g.mu.Lock()
+	g.closing = true
+	g.mu.Unlock()
+	r, _, e = fetchCall(c, endpoint, o.URL, nil)
+	check("stopping", r, e, 503, "stopping")
+}
+
+// Vpngate-Queue-Ms is the time a request waited in the gateway for
+// dispatch, on forwarded answers and on gateway errors alike.
+func TestFetchQueueMsHeader(t *testing.T) {
+	release := make(chan struct{})
+	o := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/hold" {
+			<-release
+		}
+		io.WriteString(w, "ok")
+	}))
+	defer o.Close()
+	g, endpoint, c := fetchGateway(t, []*httptest.Server{o}, func(f *config.Fetch) { f.MaxInflight = 1 })
+	r, _, e := fetchCall(c, endpoint, o.URL, nil)
+	if e != nil || r.Header.Get("Vpngate-Queue-Ms") != "0" {
+		t.Fatal("unqueued request", e, r.Header.Get("Vpngate-Queue-Ms"))
+	}
+	held := make(chan struct{})
+	go func() { defer close(held); fetchCall(c, endpoint, o.URL+"/hold", nil) }()
+	for deadline := time.Now().Add(2 * time.Second); ; time.Sleep(time.Millisecond) {
+		g.fetch.mu.Lock()
+		active := g.fetch.active
+		g.fetch.mu.Unlock()
+		if active == 1 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("slot not taken")
+		}
+	}
+	r, _, e = fetchCall(c, endpoint, o.URL, map[string]string{"Vpngate-Timeout-Ms": "60"})
+	if ms, _ := strconv.Atoi(r.Header.Get("Vpngate-Queue-Ms")); e != nil || r.StatusCode != 504 || ms < 50 {
+		t.Fatal("queued deadline", e, r.Header.Get("Vpngate-Queue-Ms"))
+	}
+	queued := make(chan *http.Response, 1)
+	go func() { r, _, _ := fetchCall(c, endpoint, o.URL, nil); queued <- r }()
+	queueAt(t, g.fetch, classInteractive, 1)
+	time.Sleep(80 * time.Millisecond)
+	close(release)
+	<-held
+	r = <-queued
+	if ms, _ := strconv.Atoi(r.Header.Get("Vpngate-Queue-Ms")); r.StatusCode != 200 || ms < 70 || r.Header.Get("Vpngate-Lane") == "" {
+		t.Fatal("queued request", r.StatusCode, r.Header.Get("Vpngate-Queue-Ms"))
+	}
+}
+
+// status.json shows each origin's controllers and the fetch bounds.
+func TestFetchStatusPublishesControllers(t *testing.T) {
+	origins := make([]*httptest.Server, 2)
+	for i := range origins {
+		origins[i] = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "ok") }))
+		defer origins[i].Close()
+	}
+	g, endpoint, c := fetchGateway(t, origins, nil)
+	for range 40 {
+		if r, _, e := fetchCall(c, endpoint, origins[0].URL, nil); e != nil || r.StatusCode != 200 {
+			t.Fatal(e)
+		}
+	}
+	raw, err := json.Marshal(g.Status())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var status struct {
+		Fetch struct {
+			TimeoutSeconds    int   `json:"timeout_seconds"`
+			MaxAttempts       int   `json:"max_attempts"`
+			InitialPerTunnel  int   `json:"initial_per_tunnel"`
+			QueuedInteractive *int  `json:"queued_interactive"`
+			QueuedBulk        *int  `json:"queued_bulk"`
+			Truncated         *bool `json:"controllers_truncated"`
+			Controllers       []struct {
+				Origin   string         `json:"origin"`
+				Active   *int           `json:"active"`
+				Queued   *int           `json:"queued"`
+				PausedMS *int64         `json:"paused_ms"`
+				Lanes    []laneSnapshot `json:"lanes"`
+			} `json:"controllers"`
+		} `json:"fetch"`
+	}
+	if err = json.Unmarshal(raw, &status); err != nil {
+		t.Fatal(err)
+	}
+	f := status.Fetch
+	if f.TimeoutSeconds != 3 || f.MaxAttempts != 3 || f.InitialPerTunnel != 16 || f.QueuedInteractive == nil || f.QueuedBulk == nil || f.Truncated == nil || *f.Truncated {
+		t.Fatalf("fetch bounds %s", raw)
+	}
+	key, _ := config.CanonicalOrigin(origins[0].URL)
+	if len(f.Controllers) != 1 || f.Controllers[0].Origin != key || f.Controllers[0].Active == nil || f.Controllers[0].PausedMS == nil {
+		t.Fatalf("controllers %s", raw)
+	}
+	seen := 0
+	for _, lane := range f.Controllers[0].Lanes {
+		if lane.ID != "lane-0" && lane.ID != "lane-1" || lane.Limit < 1 || lane.State == "" {
+			t.Fatalf("lane %+v", lane)
+		}
+		seen++
+	}
+	if seen == 0 {
+		t.Fatalf("no lane state published: %s", raw)
+	}
+}
+
+// The published controller state stays bounded with 500 tunnels and the
+// maximum number of origins.
+func TestFetchStatusControllersAreBounded(t *testing.T) {
+	s := simGateway(t, 500, nil)
+	now := simEpoch
+	s.mu.Lock()
+	for o := range maxFetchOrigins {
+		r := s.route(fmt.Sprintf("https://o%d.test:443", o), now)
+		for i := range r.lanes {
+			r.lanes[i].latency, r.lanes[i].reference, r.lanes[i].decided = 100, 90, now
+		}
+	}
+	s.mu.Unlock()
+	raw, err := json.Marshal(s.status())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(raw) > 1<<20 {
+		t.Fatalf("fetch status is %d bytes", len(raw))
+	}
+	if !strings.Contains(string(raw), `"controllers_truncated":true`) {
+		t.Fatal("truncation not reported")
 	}
 }
