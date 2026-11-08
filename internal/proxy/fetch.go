@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/mrqs001/vpngate/internal/signed"
 )
 
 type fetchContextKey struct{}
@@ -24,7 +26,8 @@ type fetchRequest struct {
 	class    fetchClass
 	attempts int
 	lane     int
-	queued   time.Duration // waiting for dispatch, over all attempts
+	queued   time.Duration  // waiting for dispatch, over all attempts
+	signed   *signedRequest // nil for /fetch
 }
 
 // fetchRefuse answers a request vpngate will not forward. reason is its
@@ -50,6 +53,7 @@ func fetchPriority(values []string) (fetchClass, bool) {
 
 func (g *Gateway) startFetch(l net.Listener) error {
 	g.fetch = newFetchScheduler(g)
+	g.signed = make([]signedLane, len(g.cfg.Tunnels)) // transports are created on first /fetch_signed use
 	for i, c := range g.cfg.Tunnels {
 		// Reuse the namespace dialer. TLS is performed by the unprivileged
 		// worker, with one bounded session cache per lane and no local TLS leg.
@@ -114,8 +118,16 @@ func (g *Gateway) startFetch(l net.Listener) error {
 		g.handlers.Add(1)
 		g.mu.Unlock()
 		defer g.handlers.Done()
-		if r.URL.Path != "/fetch" || r.URL.RawQuery != "" || r.Method == http.MethodConnect || r.Header.Get("Upgrade") != "" {
-			fetchRefuse(w, 400, "invalid_request", "use /fetch with Vpngate-Target")
+		var sig *signedRequest
+		if r.URL.Path != "/fetch" {
+			if r.URL.Path != "/fetch_signed" {
+				fetchRefuse(w, 400, "invalid_request", "use /fetch or /fetch_signed with Vpngate-Target")
+				return
+			}
+			sig = &signedRequest{}
+		}
+		if r.URL.RawQuery != "" || r.Method == http.MethodConnect || r.Header.Get("Upgrade") != "" {
+			fetchRefuse(w, 400, "invalid_request", "use /fetch or /fetch_signed with Vpngate-Target")
 			return
 		}
 		if !g.authorized(r) {
@@ -166,7 +178,12 @@ func (g *Gateway) startFetch(l net.Listener) error {
 				_ = rc.SetReadDeadline(time.Time{})
 			}()
 		}
-		meta := &fetchRequest{target: u, session: session, class: class}
+		meta := &fetchRequest{target: u, session: session, class: class, signed: sig}
+		if sig != nil {
+			sig.omit = signed.ParseOmit(r.Header.Values("Vpngate-Omit"))
+			ctx = signed.WithOmit(ctx, sig.omit)
+			g.signedRequests.Add(1)
+		}
 		r = r.WithContext(context.WithValue(ctx, fetchContextKey{}, meta))
 		g.fetch.requests.Add(1)
 		reverse.ServeHTTP(w, r)
@@ -266,10 +283,14 @@ func (t fetchAttemptTransport) RoundTrip(r *http.Request) (*http.Response, error
 			break
 		}
 	}
+	routeKey := key
+	if meta.signed != nil {
+		routeKey = "signed:" + key // separate per-origin controller state
+	}
 	retryable := (r.Method == http.MethodGet || r.Method == http.MethodHead) && (r.Body == nil || r.Body == http.NoBody)
 	avoid := -1
 	for attempt := 0; ; attempt++ {
-		p, waited, e := g.fetch.acquire(r.Context(), key, port, avoid, pin, meta.class)
+		p, waited, e := g.fetch.acquire(r.Context(), routeKey, port, avoid, pin, meta.class)
 		meta.queued += waited
 		if e != nil {
 			return nil, e
@@ -281,7 +302,12 @@ func (t fetchAttemptTransport) RoundTrip(r *http.Request) (*http.Response, error
 			out.Body = &countedBody{ReadCloser: r.Body, ctx: r.Context(), bytes: &g.lanes[p.lane].upload}
 		}
 		p.started = time.Now()
-		resp, e := g.fetchTransports[p.lane].RoundTrip(out)
+		var resp *http.Response
+		if meta.signed == nil {
+			resp, e = g.fetchTransports[p.lane].RoundTrip(out)
+		} else {
+			resp, e = g.signedTransport(p.lane).RoundTrip(out)
+		}
 		ttfb := time.Since(p.started)
 		lane := g.lanes[p.lane]
 		blocked := e == nil && resp.StatusCode == 403 && retryForbidden
@@ -289,7 +315,7 @@ func (t fetchAttemptTransport) RoundTrip(r *http.Request) (*http.Response, error
 		if e != nil {
 			var certErr *tls.CertificateVerificationError
 			var hostErr x509.HostnameError
-			if errors.As(e, &certErr) || errors.As(e, &hostErr) {
+			if errors.As(e, &certErr) || errors.As(e, &hostErr) || (meta.signed != nil && signed.IsCertificateError(e)) {
 				p.finish(0, 0, 0)
 				return nil, e
 			}

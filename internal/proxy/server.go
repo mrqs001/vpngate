@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"crypto/subtle"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -50,6 +51,9 @@ type Gateway struct {
 	servers            []*http.Server
 	transports         []*http.Transport
 	fetchTransports    []*http.Transport
+	signed             []signedLane   // per lane, for /fetch_signed
+	signedRoots        *x509.CertPool // nil: system roots; tests set it before the first signed request
+	signedRequests     atomic.Uint64
 	fetch              *fetchScheduler
 	listeners          []net.Listener
 	mu                 sync.Mutex
@@ -433,6 +437,11 @@ func (g *Gateway) Close() {
 	}
 	for _, t := range g.fetchTransports {
 		t.CloseIdleConnections()
+	}
+	for i := range g.signed {
+		if t := g.signed[i].t.Load(); t != nil {
+			t.CloseIdleConnections()
+		}
 	}
 	g.wg.Wait()
 	g.handlers.Wait()

@@ -513,6 +513,7 @@ func (s *fetchScheduler) status() any {
 		"max_attempts": s.g.cfg.Fetch.MaxAttempts,
 		"requests":     s.requests.Load(), "successful_attempts": s.completed.Load(), "retries": s.retries.Load(),
 		"rejected": s.rejected.Load(), "timeouts": s.timeouts.Load(), "http2": s.g.cfg.Fetch.UseHTTP2(),
+		"signed_requests":  s.g.signedRequests.Load(),
 		"tls_verification": !s.g.cfg.Fetch.InsecureSkipVerify,
 		"controllers":      controllers, "controllers_truncated": truncated}
 }
