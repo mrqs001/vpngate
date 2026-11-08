@@ -425,3 +425,60 @@ func TestH2GoAwayFailsUnprocessedRetryably(t *testing.T) {
 		t.Fatal("stream 1 must finish", e)
 	}
 }
+
+func TestH2CancelledBeforeStartReleasesReservation(t *testing.T) {
+	cc := dialGo(t, &http2.Server{}, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	for i := 0; i < 200; i++ { // the leak depended on goroutine timing
+		if !cc.reserve() {
+			t.Fatal("reserve", i)
+		}
+		cc.roundTrip(newGET(t, "http://a.example/").WithContext(ctx), nil)
+	}
+	deadline := time.Now().Add(time.Second)
+	for idle, _ := cc.idle(); !idle; idle, _ = cc.idle() {
+		if time.Now().After(deadline) {
+			cc.mu.Lock()
+			t.Fatal("reservation leaked: pending", cc.pending, "streams", len(cc.streams))
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func TestH2StalledWriteFailsConnection(t *testing.T) {
+	old := h2WriteTimeout
+	h2WriteTimeout = 200 * time.Millisecond
+	defer func() { h2WriteTimeout = old }()
+	c, sc := tcpPair(t)
+	cc, err := newH2Conn(c, Chrome, 64<<10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cc.close()
+	s := newFramerServer(t, sc)
+	s.mu.Lock()
+	s.fr.WriteSettings(http2.Setting{ID: http2.SettingInitialWindowSize, Val: 1<<31 - 1})
+	s.fr.WriteWindowUpdate(0, 1<<31-1-65535)
+	s.mu.Unlock()
+	time.Sleep(50 * time.Millisecond) // the client applies the window; the server now stops reading
+	body := io.LimitReader(zeros{}, 1<<30)
+	r, _ := http.NewRequest("POST", "https://a.example/up", body)
+	done := make(chan error, 1)
+	go func() { _, e := cc.roundTrip(r, nil); done <- e }()
+	select {
+	case e := <-done:
+		if e == nil {
+			t.Fatal("stalled upload succeeded")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("stalled write blocked the connection")
+	}
+	if cc.usable() {
+		t.Fatal("stalled connection still usable")
+	}
+}
+
+type zeros struct{}
+
+func (zeros) Read(p []byte) (int, error) { clear(p); return len(p), nil }

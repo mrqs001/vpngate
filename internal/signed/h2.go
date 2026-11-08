@@ -29,6 +29,18 @@ var (
 	errH2BodyClosed      = errors.New("signed: response body closed")
 )
 
+// h2WriteTimeout bounds one socket write. A write that makes no progress
+// for this long means a dead path; the connection fails so a black-holed
+// tunnel cannot hold the write lock (and every stream on it) for minutes.
+var h2WriteTimeout = 10 * time.Second
+
+type deadlineWriter struct{ c net.Conn }
+
+func (w deadlineWriter) Write(p []byte) (int, error) {
+	w.c.SetWriteDeadline(time.Now().Add(h2WriteTimeout))
+	return w.c.Write(p)
+}
+
 const (
 	h2PeerInitialWindow = 65535 // RFC 9113 defaults until the peer's SETTINGS
 	h2PeerMaxFrame      = 16384
@@ -86,7 +98,7 @@ type h2Stream struct {
 }
 
 func newH2Conn(c net.Conn, p *Profile, maxHeaderBytes uint32) (*h2Conn, error) {
-	cc := &h2Conn{conn: c, p: p, bw: bufio.NewWriterSize(c, 16<<10), streams: map[uint32]*h2Stream{}, nextID: 1,
+	cc := &h2Conn{conn: c, p: p, bw: bufio.NewWriterSize(deadlineWriter{c}, 16<<10), streams: map[uint32]*h2Stream{}, nextID: 1,
 		maxStreams: h2InitialMaxStreams, peerWindow: h2PeerInitialWindow, peerMax: h2PeerMaxFrame,
 		sendWindow: h2PeerInitialWindow, recvWindow: h2PeerInitialWindow, idleSince: time.Now()}
 	cc.cond = sync.NewCond(&cc.mu)
@@ -194,24 +206,19 @@ func (cc *h2Conn) roundTrip(req *http.Request, fields []Field) (*http.Response, 
 	}
 	cs := &h2Stream{cc: cc, req: req, ready: make(chan struct{})}
 	cs.cond = sync.NewCond(&cc.mu)
-	// Registered before the stream is visible, so readers of cs.stop never race.
-	cs.stop = context.AfterFunc(ctx, func() { cs.abort(ctx.Err(), true) })
+	if err := ctx.Err(); err != nil {
+		cc.unreserve() // the pool's reservation, if any, is not used
+		return nil, err
+	}
 
 	cc.wmu.Lock()
 	cc.mu.Lock()
-	if cs.err != nil { // cancelled before it started
-		err := cs.err
-		cc.mu.Unlock()
-		cc.wmu.Unlock()
-		return nil, err
-	}
 	if cc.pending > 0 {
 		cc.pending--
 	} else if !cc.canTakeLocked() {
 		err := cc.err
 		cc.mu.Unlock()
 		cc.wmu.Unlock()
-		cs.stop()
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", errH2Unprocessed, err)
 		}
@@ -220,7 +227,6 @@ func (cc *h2Conn) roundTrip(req *http.Request, fields []Field) (*http.Response, 
 	if cc.err != nil || cc.goAway {
 		cc.mu.Unlock()
 		cc.wmu.Unlock()
-		cs.stop()
 		return nil, errH2Unprocessed
 	}
 	cs.id = cc.nextID
@@ -265,9 +271,15 @@ func (cc *h2Conn) roundTrip(req *http.Request, fields []Field) (*http.Response, 
 	cc.wmu.Unlock()
 	if err != nil {
 		cc.fail(err)
-		cs.stop()
 		return nil, fmt.Errorf("%w: %v", errH2ConnLost, err)
 	}
+
+	// Registered under cc.mu once the stream exists; every reader of cs.stop
+	// holds cc.mu. A context already done fires abort at once, which resets
+	// the stream.
+	cc.mu.Lock()
+	cs.stop = context.AfterFunc(ctx, func() { cs.abort(ctx.Err(), true) })
+	cc.mu.Unlock()
 
 	if hasBody {
 		go cs.writeBody(req.Body)
@@ -346,10 +358,14 @@ func (cs *h2Stream) writeBody(body io.ReadCloser) {
 
 func (cc *h2Conn) writeRST(id uint32, code http2.ErrCode) {
 	cc.wmu.Lock()
-	if cc.fr.WriteRSTStream(id, code) == nil {
-		cc.bw.Flush()
+	err := cc.fr.WriteRSTStream(id, code)
+	if err == nil {
+		err = cc.bw.Flush()
 	}
 	cc.wmu.Unlock()
+	if err != nil {
+		cc.fail(err)
+	}
 }
 
 func (cc *h2Conn) writeWindowUpdates(stream uint32, streamInc, connInc int64) {
@@ -363,8 +379,11 @@ func (cc *h2Conn) writeWindowUpdates(stream uint32, streamInc, connInc int64) {
 	if connInc > 0 {
 		cc.fr.WriteWindowUpdate(0, uint32(connInc))
 	}
-	cc.bw.Flush()
+	err := cc.bw.Flush()
 	cc.wmu.Unlock()
+	if err != nil {
+		cc.fail(err)
+	}
 }
 
 // removeLocked takes a stream off the connection. Caller holds cc.mu.
@@ -410,9 +429,10 @@ func (cs *h2Stream) abort(err error, rst bool) {
 	cs.buf.Reset()
 	cc.removeLocked(cs)
 	cs.cond.Broadcast()
+	stop := cs.stop
 	cc.mu.Unlock()
-	if cs.stop != nil {
-		cs.stop()
+	if stop != nil {
+		stop()
 	}
 	if rst && wasOpen && cs.id != 0 && !cs.remoteEnd {
 		cc.writeRST(cs.id, http2.ErrCodeCancel)
@@ -704,8 +724,11 @@ func (b *h2Body) Read(p []byte) (int, error) {
 func (b *h2Body) finish() {
 	if !b.done {
 		b.done = true
-		if b.cs.stop != nil {
-			b.cs.stop()
+		b.cs.cc.mu.Lock()
+		stop := b.cs.stop
+		b.cs.cc.mu.Unlock()
+		if stop != nil {
+			stop()
 		}
 	}
 }

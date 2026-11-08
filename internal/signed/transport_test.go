@@ -1,6 +1,7 @@
 package signed
 
 import (
+	"bufio"
 	"context"
 	"crypto/x509"
 	"io"
@@ -230,5 +231,69 @@ func TestTransportHTTP1OriginDialsInParallel(t *testing.T) {
 	}
 	if peak.Load() < 4 {
 		t.Fatal("HTTP/1.1 requests were serialised", peak.Load())
+	}
+}
+
+func TestTransportDoesNotRetryNonIdempotentAfterSend(t *testing.T) {
+	l, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	var posts atomic.Int64
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				return
+			}
+			go func(c net.Conn) {
+				defer c.Close()
+				br := bufio.NewReader(c)
+				for {
+					req, err := http.ReadRequest(br)
+					if err != nil {
+						return
+					}
+					if req.Method == "POST" {
+						posts.Add(1)
+						return // acted on it, then the connection drops
+					}
+					io.WriteString(c, "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok")
+				}
+			}(c)
+		}
+	}()
+	tr := NewTransport(plainDial, Chrome, Options{HTTP2: true, IdleConnTimeout: time.Minute, MaxIdleConnsPerHost: 4})
+	defer tr.CloseIdleConnections()
+	base := "http://" + l.Addr().String()
+	get(t, tr, context.Background(), base+"/warm") // the POST reuses this connection
+	r, _ := http.NewRequest("POST", base+"/charge", nil)
+	if _, err := tr.RoundTrip(r); err == nil {
+		t.Fatal("POST succeeded")
+	}
+	time.Sleep(50 * time.Millisecond)
+	if posts.Load() != 1 {
+		t.Fatal("bodyless POST sent", posts.Load(), "times")
+	}
+}
+
+func TestTransportKeepsHTTP1ConnAcrossSweep(t *testing.T) {
+	o := newOrigin(t, false, false, func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "ok") })
+	tr := newTestTransport(o)
+	defer tr.CloseIdleConnections()
+	r, _ := http.NewRequest("GET", o.URL+"/", nil)
+	resp, err := tr.RoundTrip(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr.mu.Lock()
+	tr.pruneLocked(func(time.Time) bool { return false }) // a sweep while the request is in flight
+	tr.mu.Unlock()
+	io.ReadAll(resp.Body)
+	resp.Body.Close()
+	get(t, tr, context.Background(), o.URL+"/")
+	if o.conns.Load() != 1 {
+		t.Fatal("keep-alive connection dropped by the sweep", o.conns.Load())
 	}
 }

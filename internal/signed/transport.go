@@ -129,7 +129,7 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		if err == nil {
 			return resp, nil
 		}
-		if attempt > 0 || !replayable(r) || r.Context().Err() != nil || !retryableConnError(err, reused, cc != nil) {
+		if attempt > 0 || !replayable(r) || r.Context().Err() != nil || !retryableConnError(err, reused, cc != nil, idempotent(r)) {
 			return nil, err
 		}
 		if r.GetBody != nil && hasBody {
@@ -143,13 +143,27 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	}
 }
 
-// retryableConnError reports whether a failure happened before the server
-// could have acted on the request, on a connection that was already open.
-func retryableConnError(err error, reused, h2 bool) bool {
+// idempotent reports whether resending r cannot repeat a side effect, as
+// net/http decides: safe methods, or a request carrying an idempotency key.
+func idempotent(r *http.Request) bool {
+	switch r.Method {
+	case "", http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
+		return true
+	}
+	_, key := r.Header["Idempotency-Key"]
+	_, xkey := r.Header["X-Idempotency-Key"]
+	return key || xkey
+}
+
+// retryableConnError reports whether a request may be resent on a new
+// connection. A stream the server refused or never saw (GOAWAY above it,
+// REFUSED_STREAM) is always safe. A reused connection that died after the
+// request was sent may have been acted on, so only idempotent requests retry.
+func retryableConnError(err error, reused, h2, idempotent bool) bool {
 	if errors.Is(err, errH2Unprocessed) {
 		return true
 	}
-	if !reused {
+	if !reused || !idempotent {
 		return false
 	}
 	if h2 {
@@ -250,7 +264,11 @@ func (t *Transport) dialConn(ctx context.Context, key string, up *urlParts) (*h2
 func (t *Transport) putIdle(key string, hc *h1Conn) {
 	t.mu.Lock()
 	p := t.pools[key]
-	if p != nil && len(p.h1) < max(1, t.o.MaxIdleConnsPerHost) {
+	if p == nil { // a sweep removed the pool while this connection was busy
+		p = &originPool{h1Only: true}
+		t.pools[key] = p
+	}
+	if len(p.h1) < max(1, t.o.MaxIdleConnsPerHost) {
 		p.h1 = append(p.h1, hc)
 		hc = nil
 	}
