@@ -12,7 +12,7 @@ test-native:
 
 check:
 	go vet ./...
-	test -z "$$(gofmt -l cmd internal tools)"
+	test -z "$$(gofmt -l cmd internal tools | grep -v ^internal/third_party/)"
 
 bench:
 	GOMAXPROCS=2 go test ./internal/proxy -run '^$$' -bench '^BenchmarkFetchTLS$$' -benchmem -count=3
