@@ -482,3 +482,39 @@ func TestH2StalledWriteFailsConnection(t *testing.T) {
 type zeros struct{}
 
 func (zeros) Read(p []byte) (int, error) { clear(p); return len(p), nil }
+
+func TestH2EarlyResponseResetsUnfinishedUpload(t *testing.T) {
+	c, sc := tcpPair(t)
+	cc, err := newH2Conn(c, Chrome, 64<<10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cc.close()
+	s := newFramerServer(t, sc)
+	s.settings()
+	r, _ := http.NewRequest("POST", "https://a.example/up", io.LimitReader(zeros{}, 1<<30))
+	type result struct {
+		resp *http.Response
+		err  error
+	}
+	got := make(chan result, 1)
+	go func() { resp, e := cc.roundTrip(r, nil); got <- result{resp, e} }()
+	h := next[*http2.MetaHeadersFrame](s)
+	s.respond(h.StreamID, true, ":status", "413")
+	res := <-got
+	if res.err != nil || res.resp.StatusCode != 413 {
+		t.Fatal(res.err)
+	}
+	for {
+		f := s.read()
+		if rst, ok := f.(*http2.RSTStreamFrame); ok {
+			if rst.StreamID != h.StreamID || rst.ErrCode != http2.ErrCodeNo {
+				t.Fatal("rst", rst.StreamID, rst.ErrCode)
+			}
+			return
+		}
+		if d, ok := f.(*http2.DataFrame); ok && d.StreamEnded() {
+			t.Fatal("upload completed instead of stopping")
+		}
+	}
+}

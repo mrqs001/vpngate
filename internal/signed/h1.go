@@ -22,6 +22,9 @@ type h1Conn struct {
 	bw                *bufio.Writer
 	respHeaderTimeout time.Duration
 
+	dmu       sync.Mutex // orders deadline changes against cancellation
+	cancelled bool
+
 	mu        sync.Mutex
 	ok        bool // no request in flight and the last response allows reuse
 	idleSince time.Time
@@ -30,6 +33,20 @@ type h1Conn struct {
 
 func newH1Conn(c net.Conn) *h1Conn {
 	return &h1Conn{conn: c, br: bufio.NewReaderSize(c, 16<<10), bw: bufio.NewWriterSize(c, 16<<10), ok: true, idleSince: time.Now()}
+}
+
+// h1AfterHeaders is a test seam: it runs between reading the response
+// headers and clearing the header deadline, where a cancel used to be lost.
+var h1AfterHeaders func()
+
+// setReadDeadline changes the read deadline unless the request was
+// cancelled, so a cancellation's past deadline is never overwritten.
+func (c *h1Conn) setReadDeadline(t time.Time) {
+	c.dmu.Lock()
+	if !c.cancelled {
+		c.conn.SetReadDeadline(t)
+	}
+	c.dmu.Unlock()
 }
 
 func (c *h1Conn) reusable() bool {
@@ -99,7 +116,15 @@ func (c *h1Conn) roundTrip(req *http.Request, fields []Field, p *Profile) (*http
 	c.ok = false
 	c.mu.Unlock()
 	ctx := req.Context()
-	stop := context.AfterFunc(ctx, func() { c.conn.SetDeadline(time.Unix(1, 0)) })
+	c.dmu.Lock()
+	c.cancelled = false
+	c.dmu.Unlock()
+	stop := context.AfterFunc(ctx, func() {
+		c.dmu.Lock()
+		c.cancelled = true
+		c.conn.SetDeadline(time.Unix(1, 0))
+		c.dmu.Unlock()
+	})
 	fail := func(err error) (*http.Response, error) {
 		stop()
 		c.conn.Close()
@@ -130,7 +155,7 @@ func (c *h1Conn) roundTrip(req *http.Request, fields []Field, p *Profile) (*http
 		return fail(err)
 	}
 	if c.respHeaderTimeout > 0 {
-		c.conn.SetReadDeadline(time.Now().Add(c.respHeaderTimeout))
+		c.setReadDeadline(time.Now().Add(c.respHeaderTimeout))
 	}
 	var resp *http.Response
 	for {
@@ -143,8 +168,11 @@ func (c *h1Conn) roundTrip(req *http.Request, fields []Field, p *Profile) (*http
 			break
 		}
 	}
+	if h1AfterHeaders != nil {
+		h1AfterHeaders()
+	}
 	if c.respHeaderTimeout > 0 {
-		c.conn.SetReadDeadline(time.Time{})
+		c.setReadDeadline(time.Time{})
 	}
 	keep := !resp.Close && !req.Close
 	body := &h1Body{ReadCloser: resp.Body, c: c, ctx: ctx, stop: stop, keep: keep}

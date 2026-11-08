@@ -281,3 +281,15 @@ func TestFetchSignedFingerprintEndToEnd(t *testing.T) {
 		t.Fatalf("JA4 %v, Chrome capture %v", ja4, capture)
 	}
 }
+
+func TestFetchBadPathKeepsOriginalMessage(t *testing.T) {
+	o := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer o.Close()
+	_, endpoint, c := fetchGateway(t, []*httptest.Server{o}, nil)
+	for _, path := range []string{"/other", "/fetch?x=1"} {
+		r, body, err := fetchCall(c, strings.TrimSuffix(endpoint, "/fetch")+path, o.URL, nil)
+		if err != nil || r.StatusCode != 400 || string(body) != "use /fetch with Vpngate-Target\n" {
+			t.Fatalf("%s: %v %q", path, err, body)
+		}
+	}
+}

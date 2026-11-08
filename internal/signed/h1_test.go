@@ -3,6 +3,8 @@ package signed
 import (
 	"bufio"
 	"bytes"
+	"context"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -136,5 +138,34 @@ func TestH1KeepAliveReuse(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	if h1.reusable() {
 		t.Fatal("conn reusable after early close")
+	}
+}
+
+func TestH1CancelAfterHeadersInterruptsBody(t *testing.T) {
+	c, sc := tcpPair(t)
+	h1 := newH1Conn(c)
+	h1.respHeaderTimeout = 5 * time.Second
+	ctx, cancel := context.WithCancel(context.Background())
+	h1AfterHeaders = func() { cancel(); time.Sleep(20 * time.Millisecond) } // cancel lands in the window
+	defer func() { h1AfterHeaders = nil }()
+	go func() {
+		br := bufio.NewReader(sc)
+		rawRequest(t, br)
+		io.WriteString(sc, "HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\npartial") // then holds the rest
+	}()
+	r, _ := http.NewRequestWithContext(ctx, "GET", "http://a.example/", nil)
+	resp, err := h1.roundTrip(r, nil, Chrome)
+	if err != nil {
+		return // the cancel was seen before the body: also correct
+	}
+	done := make(chan error, 1)
+	go func() { _, e := io.ReadAll(resp.Body); done <- e }()
+	select {
+	case e := <-done:
+		if !errors.Is(e, context.Canceled) {
+			t.Fatal("body error", e)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("cancelled body read still blocked")
 	}
 }

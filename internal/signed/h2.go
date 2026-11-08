@@ -319,12 +319,8 @@ func (cs *h2Stream) writeBody(body io.ReadCloser) {
 				cc.cond.Wait()
 			}
 			if cs.closed || cs.remoteEnd || cc.err != nil {
-				remote := cs.remoteEnd && !cs.closed
 				cc.mu.Unlock()
-				if remote {
-					cc.writeRST(cs.id, http2.ErrCodeNo) // the response is complete; stop the upload
-				}
-				return
+				return // the read loop resets a stream whose response ended first
 			}
 			k := min(int64(len(data)), cs.sendWin, cc.sendWindow, int64(cc.peerMax))
 			cs.sendWin -= k
@@ -397,6 +393,16 @@ func (cc *h2Conn) removeLocked(cs *h2Stream) {
 		cc.idleSince = time.Now()
 	}
 	cc.cond.Broadcast()
+}
+
+// endUploadLocked stops an upload whose response has already ended: the
+// server needs no more of the body, so the stream is reset with NO_ERROR
+// (RFC 9113 section 8.1). Caller holds cc.mu.
+func (cc *h2Conn) endUploadLocked(cs *h2Stream) {
+	if !cs.localEnd {
+		cs.localEnd = true
+		go cc.writeRST(cs.id, http2.ErrCodeNo)
+	}
 }
 
 // creditLocked returns consumed bytes to the connection window and reports
@@ -602,6 +608,7 @@ func (cc *h2Conn) onHeaders(f *http2.MetaHeadersFrame) {
 			cs.resp.Trailer.Add(http.CanonicalHeaderKey(hf.Name), hf.Value)
 		}
 		cs.remoteEnd = true
+		cc.endUploadLocked(cs)
 		cc.removeLocked(cs)
 		cs.cond.Broadcast()
 		return
@@ -637,6 +644,7 @@ func (cc *h2Conn) onHeaders(f *http2.MetaHeadersFrame) {
 	}
 	if f.StreamEnded() {
 		cs.remoteEnd = true
+		cc.endUploadLocked(cs)
 		resp.Body = http.NoBody
 		if resp.ContentLength < 0 {
 			resp.ContentLength = 0
@@ -672,6 +680,7 @@ func (cc *h2Conn) onData(f *http2.DataFrame) {
 	cs.unacked += pad
 	if f.StreamEnded() {
 		cs.remoteEnd = true
+		cc.endUploadLocked(cs)
 		cc.removeLocked(cs)
 	}
 	cs.cond.Broadcast()

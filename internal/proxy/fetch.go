@@ -121,13 +121,13 @@ func (g *Gateway) startFetch(l net.Listener) error {
 		var sig *signedRequest
 		if r.URL.Path != "/fetch" {
 			if r.URL.Path != "/fetch_signed" {
-				fetchRefuse(w, 400, "invalid_request", "use /fetch or /fetch_signed with Vpngate-Target")
+				fetchRefuse(w, 400, "invalid_request", "use /fetch with Vpngate-Target")
 				return
 			}
 			sig = &signedRequest{}
 		}
 		if r.URL.RawQuery != "" || r.Method == http.MethodConnect || r.Header.Get("Upgrade") != "" {
-			fetchRefuse(w, 400, "invalid_request", "use /fetch or /fetch_signed with Vpngate-Target")
+			fetchRefuse(w, 400, "invalid_request", "use /fetch with Vpngate-Target")
 			return
 		}
 		if !g.authorized(r) {
