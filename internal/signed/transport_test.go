@@ -12,7 +12,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
 )
 
 type origin struct {
