@@ -488,6 +488,32 @@ func BenchmarkFetchTLS(b *testing.B) {
 	}
 }
 
+// BenchmarkFetchSignedTLS is BenchmarkFetchTLS through /fetch_signed, for
+// information: the browser-fingerprint path need not match /fetch.
+func BenchmarkFetchSignedTLS(b *testing.B) {
+	payload := bytes.Repeat([]byte("x"), 40<<10)
+	o := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
+	o.EnableHTTP2 = true
+	o.StartTLS()
+	defer o.Close()
+	g, endpoint, c := fetchGateway(b, []*httptest.Server{o}, nil)
+	pool := x509.NewCertPool()
+	pool.AddCert(o.Certificate())
+	g.signedRoots = pool
+	endpoint = strings.TrimSuffix(endpoint, "/fetch") + "/fetch_signed"
+	b.SetBytes(int64(len(payload)))
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			r, data, e := fetchCall(c, endpoint, o.URL, nil)
+			if e != nil || r.StatusCode != 200 || len(data) != len(payload) {
+				b.Fatal("benchmark failure", e)
+			}
+		}
+	})
+}
+
 type dispatched struct {
 	class fetchClass
 	p     *fetchPermit

@@ -23,13 +23,13 @@ Fetch mode accepts 1–500 tunnels and uses the same supervisor/socket broker an
 
 | `fetch` setting | Default | Meaning |
 | --- | --- | --- |
-| `listen` | required | One local address serving `/fetch` |
+| `listen` | required | One local address serving `/fetch` and `/fetch_signed` |
 | `max_inflight` | 512, bounded by `max_connections` | Concurrent upstream attempts across the pool |
 | `max_pending` | 1024 | Queued attempts; excess work receives 503 with `Vpngate-Error: capacity` |
 | `initial_per_tunnel` | 32, bounded by `per_tunnel_connections` | Initial concurrency per origin and tunnel, and the floor for latency-only decreases; see [concurrency](#concurrency-per-origin-and-tunnel) |
 | `timeout_seconds` | 30 | Maximum duration including queueing, redirects, retries and response streaming |
 | `max_attempts` | 3 | Maximum explicit dispatch attempts per redirect hop; range 1–5 |
-| `http2` | true | Negotiate upstream HTTP/2, with HTTP/1.1 fallback; false forces HTTP/1.1 |
+| `http2` | true | Negotiate upstream HTTP/2, with HTTP/1.1 fallback; false forces HTTP/1.1 (on `/fetch_signed` this changes the ClientHello, which then no longer matches Chrome) |
 | `insecure_skip_verify` | false | Explicitly skip upstream certificate/hostname verification; TLS encryption still runs |
 | `retry_forbidden_origins` | empty | Origins where the operator knows a 403 signals an IP-specific block; see below |
 
@@ -68,7 +68,7 @@ Every response the fetch handler makes itself carries `Vpngate-Error` and no `Vp
 
 | `Vpngate-Error` | Status | Meaning |
 | --- | ---: | --- |
-| `invalid_request` | 400 | Path other than `/fetch`, a query string, CONNECT or an upgrade; a missing, repeated or invalid `Vpngate-Target`; an invalid `Vpngate-Timeout-Ms`, `Vpngate-Session` or `Vpngate-Priority`. Do not retry |
+| `invalid_request` | 400 | Path other than `/fetch` or `/fetch_signed`, a query string, CONNECT or an upgrade; a missing, repeated or invalid `Vpngate-Target`; an invalid `Vpngate-Timeout-Ms`, `Vpngate-Session` or `Vpngate-Priority`. Do not retry |
 | `proxy_auth` | 407 | Missing or wrong `Proxy-Authorization` on an endpoint with credentials. Do not retry |
 | `stopping` | 503 | The gateway is shutting down. Retry once it is back |
 | `capacity` | 503 | The pending queue or the origin state is full. Retry after a short backoff |
@@ -78,6 +78,38 @@ Every response the fetch handler makes itself carries `Vpngate-Error` and no `Vp
 Go's HTTP server rejects malformed HTTP, such as oversized headers, before the fetch handler runs. Those responses have no `Vpngate-*` headers.
 
 Gateway deadline failures before response headers produce 504. Upstream work is canceled at the deadline; the local write deadline allows one additional second to flush that error or interrupt a stalled reader. Authentication/target validation fail before dispatch. A failure after streaming has started terminates the response; the client must reject the partial body. The gateway cannot transparently restart a partially delivered response without buffering it. CONNECT, WebSocket upgrades and browser execution are outside this endpoint; fixed CONNECT proxies remain available for opaque streams.
+
+## Browser-fingerprint endpoint: `/fetch_signed`
+
+`/fetch_signed` takes the same request headers, returns the same response headers and errors, and uses the same scheduler, tunnels, retries, redirects, deadlines and limits as `/fetch`. The difference is what the website sees. On the wire, every tunnel presents current stable Chrome on Windows:
+
+- **TLS.** The ClientHello is Chrome's: cipher order, extensions with Chrome's per-connection permutation, GREASE, X25519MLKEM768, ALPN `h2,http/1.1`, ALPS, certificate compression and ECH GREASE. vpngate builds it with a pinned, vendored copy of [uTLS](../internal/third_party/utls/VENDORED.md), using its Chrome 155 spec. Tests compare it with a real Chrome 155 capture; Chrome's handshake did not change in 156. A resumed session adds only `pre_shared_key`, as Chrome does.
+- **HTTP/2.** Chrome's SETTINGS (`1:65536;2:0;4:6291456;6:262144`), connection WINDOW_UPDATE `15663105`, pseudo-header order `:method :authority :scheme :path`, Chrome's header order and a HEADERS priority whose weight follows the request's `priority` header.
+- **Headers.** vpngate adds Chrome 156's headers when the client does not send them.
+
+| Method | Default headers |
+| --- | --- |
+| GET, HEAD | A top-level navigation: `sec-ch-ua`, `sec-ch-ua-mobile: ?0`, `sec-ch-ua-platform: "Windows"`, `upgrade-insecure-requests: 1`, Chrome's `user-agent` and `accept`, `sec-fetch-site: none`, `sec-fetch-mode: navigate`, `sec-fetch-user: ?1`, `sec-fetch-dest: document`, `accept-encoding: gzip, deflate, br, zstd`, `accept-language: en-US,en;q=0.9`, `priority: u=0, i` |
+| Every other method | A same-origin `fetch()`: the client hints, `user-agent`, `accept: */*`, `origin` (the target's origin), `sec-fetch-site: same-origin`, `sec-fetch-mode: cors`, `sec-fetch-dest: empty`, the encodings and language, `priority: u=1, i` |
+
+Plain `http://` targets get no client hints and no `sec-fetch-*` headers, and `accept-encoding: gzip, deflate`, as Chrome sends to an insecure origin. vpngate never adds `referer` or `cookie`; those stay with the application.
+
+**Overrides.** A header the client sends replaces the default of the same name and keeps Chrome's position. Headers Chrome does not send follow Chrome's, sorted by name. Two kinds of client values count as not sent, so Chrome's value stays:
+
+- an empty value;
+- a value an HTTP library sends by default: a `User-Agent` starting with `python-requests/`, `python-httpx/`, `Python/3`, `Python-urllib/`, `aiohttp/`, `Go-http-client/`, `curl/`, `Wget/`, `okhttp/`, `axios/`, `node-fetch` or `undici`; `Accept: */*`; `Accept-Encoding` of exactly `gzip, deflate`, `gzip, deflate, br`, `gzip` or `identity`; `Connection: keep-alive`.
+
+Any other value, such as `User-Agent: MyCrawler/2.0` or `Accept-Encoding: br`, is sent as given.
+
+| Request header | Meaning |
+| --- | --- |
+| `Vpngate-Omit` | Optional comma-separated default header names to leave out, case-insensitive, for example `Vpngate-Omit: sec-fetch-user, upgrade-insecure-requests` for an API-style GET. Pseudo-headers and `host` cannot be omitted. Only `/fetch_signed` reads it |
+
+**Compression.** vpngate forwards response bodies unchanged on both endpoints. Chrome advertises `br` and `zstd`, so a `/fetch_signed` client must decode Brotli and Zstandard bodies. A client that cannot should send an `Accept-Encoding` that is not on the library-default list above, for example `gzip;q=1.0, deflate`. Python `requests` sends `gzip, deflate` by default, which counts as not sent and becomes Chrome's value.
+
+**Scheduling.** Signed requests have their own per-origin controller, keyed `signed:scheme://host:port`. A 429 pause, a 403 block or slower first connections on `/fetch_signed` never change `/fetch`'s limits for that origin, and the reverse. Tunnel capacity (`per_tunnel_connections`, `max_inflight`, `max_pending`) is shared. One origin used through both endpoints takes two of the 128 controller slots. `Vpngate-Session` pinning and `retry_forbidden_origins` use the real origin on both endpoints, so a session stays on the same tunnel whichever endpoint it uses.
+
+**Cost.** Signed connections are separate from `/fetch` connections. vpngate creates a tunnel's signed transport on its first `/fetch_signed` request, so a deployment that never calls the endpoint runs no signed code. In the local TLS benchmark a signed request costs more CPU than a `/fetch` request; see [validation](validation.md).
 
 ## Routing and recovery
 
@@ -125,8 +157,9 @@ Schema version 1 gains an additive `proxy.fetch` object:
 - `active`, `queued`, `origins` describe current work/state. `queued_interactive` and `queued_bulk` (0.6.0) split `queued` by priority.
 - `requests` counts accepted logical fetch calls. `successful_attempts` counts fully read successful 2xx/3xx upstream responses, including intermediate redirects, so it is not a count of useful application results.
 - `retries`, `rejected`, `timeouts` count explicit gateway retries, queue/state capacity refusals and observed gateway deadlines.
+- `signed_requests` (0.7.0) counts accepted `/fetch_signed` calls. They are also counted in `requests`.
 - `unavailable_tunnels`, `kernel_health_fresh` describe the worker's current kernel-health exclusions.
-- `controllers` (0.6.0) lists the most recently used origins' concurrency controllers, at most 16, newest first. Each has `origin` (the scheduling key, `scheme://host:port`, with no path or query), `active`, `queued`, `paused_ms` (remaining 429/Retry-After pause, 0 when none), `peer_latency_ms` (median recent latency of its tunnels, or null) and `lanes`.
+- `controllers` (0.6.0) lists the most recently used origins' concurrency controllers, at most 16, newest first. Each has `origin` (the scheduling key, `scheme://host:port`, with no path or query; `signed:scheme://host:port` for `/fetch_signed`), `active`, `queued`, `paused_ms` (remaining 429/Retry-After pause, 0 when none), `peer_latency_ms` (median recent latency of its tunnels, or null) and `lanes`.
 - `controllers[].lanes` lists, in configuration order, each tunnel that has carried or failed a request for that origin. Each entry has `id`, `limit`, `inflight`, `latency_ms` (the last window's geometric mean), `baseline_ms`, `state`, `cooldown_ms` and `updated_unix_ms` (when the last window closed). `latency_ms` and `baseline_ms` are null until the first window closes. `state` is `growing`, `steady`, `backing_off` or `cooldown`; a state older than 5 seconds reads `steady`. Unused tunnels are omitted: they are at `initial_per_tunnel` with nothing in flight.
 - `controllers_truncated` is true when origins or lane entries were left out; at most 2048 lane entries are published.
 

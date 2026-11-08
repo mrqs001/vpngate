@@ -14,6 +14,7 @@ One static binary runs a privileged supervisor/socket broker and an unprivileged
 ## Features
 
 - One request-aware endpoint with adaptive per-tunnel concurrency, interactive and bulk priorities, persistent HTTPS/HTTP2 connections, bounded retries and tunnel recovery.
+- A second endpoint, `/fetch_signed`, whose TLS handshake, HTTP/2 frames and headers match Chrome on Windows. `/fetch` is unchanged and runs no signed code.
 - Optional fixed HTTP/CONNECT endpoints for clients that use a conventional proxy URL.
 - 1–500 tunnels, per-tunnel DNS and interface binding, with no fallback to the host connection when a bound VPN fails.
 - Streaming request/response bodies, unchanged compression, configurable concurrency and unlimited bandwidth by default.
@@ -118,7 +119,7 @@ Fetch supports HTTP/HTTPS, streaming, redirects, optional sticky sessions and co
 
 Correctness and race tests cover forwarding, isolation, DNS, deadlines, capacity and recovery. Separate validation exercised 500 synthetic kernel WireGuard peers. Performance depends on the destination, network and client workload; see [validation and benchmark commands](docs/validation.md) for measured results and their limits.
 
-[Design](docs/design.md) · [Fetch API](docs/fetch.md) · [Status API](docs/status.md) · [Contributing](CONTRIBUTING.md)
+[Design](docs/design.md) · [Fetch API](docs/fetch.md) · [Signed fetch](docs/fetch.md#browser-fingerprint-endpoint-fetch_signed) · [Status API](docs/status.md) · [Contributing](CONTRIBUTING.md)
 
 ## License
 
