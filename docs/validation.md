@@ -2,6 +2,35 @@
 
 The 0.5.0 native setup comparison, 500-tunnel fault exercise and migration checks are recorded in [native validation](native-validation.md). The 0.6.0 fetch scheduler results come first below. The older 0.4.0 fetch results describe a different change and are retained as historical evidence.
 
+## 0.7.0 `/fetch_signed`, 8 November 2026
+
+The rule for this change: `/fetch` must not change. `main` (723544e) and the branch ran back to back on one machine (AMD Ryzen 7 7700), alternating.
+
+`make bench` (`BenchmarkFetchTLS`, `GOMAXPROCS=2`), three alternating runs of `-count=3` each, 18 results per side:
+
+| | main | branch |
+| --- | ---: | ---: |
+| mean ns/op | 85,141 | 86,008 |
+| range ns/op | 81,905 to 90,617 | 83,808 to 91,892 |
+| allocs/op | 236 (two results 235) | 236 |
+| B/op | 108,721 to 108,869 | 108,725 to 108,910 |
+
+The 1% difference in the mean is inside the overlap of the two ranges. Allocations per request are identical.
+
+`make bench-load` with `VPNGATE_LOAD_WARMUP_SECONDS=5 VPNGATE_LOAD_SECONDS=20` (`GOMAXPROCS=4`), one run each:
+
+| Scenario | main MB/s | branch MB/s | main req/s | branch req/s | main p50 / p95 ms | branch p50 / p95 ms | Errors |
+| --- | ---: | ---: | ---: | ---: | --- | --- | ---: |
+| noise | 95.6 | 96.0 | 2,334 | 2,344 | 165 / 521 | 163 / 520 | 0 |
+| slow-lane | 93.6 | 93.5 | 2,285 | 2,282 | 162 / 539 | 162 / 546 | 0 |
+| capacity | 71.0 | 71.0 | 1,733 | 1,733 | 244 / 564 | 242 / 571 | 0 |
+
+The short measurement window was chosen for time; the full 60-second run (`make bench-load`) remains the reference method. Tunnel shares matched to within 1 percentage point.
+
+`make bench-signed` (`BenchmarkFetchSignedTLS`, same fixture through `/fetch_signed` over HTTP/2) measured 131 to 137 µs/op, about 211 KB and 272 allocations per request. That path is not required to match `/fetch`.
+
+Tests: `internal/signed` checks the ClientHello's JA4 and contents against the real Chrome 155 capture vendored with uTLS, that resumption adds only `pre_shared_key`, the HTTP/2 preface, SETTINGS order, WINDOW_UPDATE, pseudo-header order and priority weights, header defaults and overrides, flow control with large downloads and uploads, cancellation, CONTINUATION, oversized headers and GOAWAY. `internal/proxy` checks the `/fetch_signed` contract, separate per-origin controller state, that `/fetch` traffic never creates a signed transport, and that `fetchRequest` stays within 64 bytes.
+
 ## 0.6.0 fetch scheduler, 7 November 2026
 
 ### Why it changed
